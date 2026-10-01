@@ -1,0 +1,16 @@
+{
+  "short_name": "Janvi Makeover",
+  "name": "Janvi Makeover | Beauty, Style & You",
+  "icons": [
+    {
+      "src": "jaya-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#df1685",
+  "background_color": "#fffdfa"
+}
