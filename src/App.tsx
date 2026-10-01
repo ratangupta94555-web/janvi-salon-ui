@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import AdminDashboard from "./components/Admin/AdminDashboard";
 import PublicLayout from "./components/layouts/PublicLayout";
 import LandingPage from "./pages/LandingPage";
+import AppointmentsPage from "./pages/AppointmentsPage";
 import AppointmentsComingSoon from "./pages/AppointmentsComingSoon";
 import AboutPage from "./pages/AboutPage";
 import ServicesPage from "./pages/ServicesPage";
@@ -30,7 +31,12 @@ function App() {
   let page: React.ReactNode;
   switch (path) {
     case "/appointments":
-      page = <AppointmentsComingSoon {...pageProps} />;
+      page =
+        process.env.NODE_ENV === "production" ? (
+          <AppointmentsComingSoon {...pageProps} />
+        ) : (
+          <AppointmentsPage {...pageProps} />
+        );
       break;
     case "/about":
       page = <AboutPage {...pageProps} />;
