@@ -95,25 +95,31 @@ const videoHighlights = [
     category: "THE STUDIO",
     title: "A little time in the chair",
     poster: "/images/janvi-team-certificate.jpeg",
-    src: "",
+    src: "/videos/janvi-salon-01.mp4",
   },
   {
     category: "BRIDAL",
     title: "The finishing touches",
     poster: "/images/janvi-bridal-finish.jpeg",
-    src: "",
+    src: "/videos/janvi-salon-02.mp4",
   },
   {
     category: "HAIR",
     title: "Style, made personal",
     poster: "/images/janvi-hair-styling.jpeg",
-    src: "",
+    src: "/videos/janvi-salon-03.mp4",
   },
   {
     category: "MAKEUP",
     title: "From first brush to final look",
     poster: "/images/janvi-makeup-action.jpeg",
-    src: "",
+    src: "/videos/janvi-salon-04.mp4",
+  },
+  {
+    category: "SALON MOMENTS",
+    title: "Care in every detail",
+    poster: "/images/janvi-stylist-portrait.jpeg",
+    src: "/videos/janvi-salon-05.mp4",
   },
 ];
 export default function GalleryPage({ navigate }: Props) {
@@ -148,33 +154,6 @@ export default function GalleryPage({ navigate }: Props) {
         onAction={() => navigate("/appointments")}
       />
       <StudioHighlights page="gallery" />
-      <section className="gallery-content">
-        <div className="gallery-filters">
-          {["All", "Hair", "Makeup", "Bridal", "Studio"].map((f) => (
-            <button
-              key={f}
-              className={filter === f ? "active" : ""}
-              onClick={() => setFilter(f)}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-        <div className="gallery-grid">
-          {visible.map(([cat, img], i) => (
-            <figure
-              key={img}
-              className={`gallery-photo gallery-photo-${i % 6}`}
-            >
-              <img
-                src={img}
-                alt={`${cat} portfolio at Janvi Makeover Studio`}
-              />
-              <figcaption>{cat} · Janvi Makeover Studio</figcaption>
-            </figure>
-          ))}
-        </div>
-      </section>
       <section
         className="gallery-video-section"
         aria-labelledby="gallery-video-title"
@@ -218,6 +197,33 @@ export default function GalleryPage({ navigate }: Props) {
                 <h3>{video.title}</h3>
               </div>
             </article>
+          ))}
+        </div>
+      </section>
+      <section className="gallery-content">
+        <div className="gallery-filters">
+          {["All", "Hair", "Makeup", "Bridal", "Studio"].map((f) => (
+            <button
+              key={f}
+              className={filter === f ? "active" : ""}
+              onClick={() => setFilter(f)}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+        <div className="gallery-grid">
+          {visible.map(([cat, img], i) => (
+            <figure
+              key={img}
+              className={`gallery-photo gallery-photo-${i % 6}`}
+            >
+              <img
+                src={img}
+                alt={`${cat} portfolio at Janvi Makeover Studio`}
+              />
+              <figcaption>{cat} · Janvi Makeover Studio</figcaption>
+            </figure>
           ))}
         </div>
       </section>
