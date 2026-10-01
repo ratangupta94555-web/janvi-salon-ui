@@ -1,0 +1,115 @@
+{
+  "planHash": "c0725271e6dc9846edb78f07f451369cef9acef5dd7bb501cacd03783ffd29d3",
+  "phase": "baseline",
+  "recordedAtUtc": "2026-10-01T11:49:07.3609935Z",
+  "retryCount": 0,
+  "resetBaseline": false,
+  "complete": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 343696,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "production-build",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\r\n\u003E salon-system@0.1.0 build\r\n\u003E react-scripts build\r\n\r\n(node:2264) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead\r\n(Use \u0060node --trace-deprecation ...\u0060 to show where the warning was created)\r\nCreating an optimized production build...\r\nCompiled successfully.\r\n\r\nFile sizes after gzip:\r\n\r\n  97.33 kB  build\\static\\js\\main.c5ac3db6.js\r\n  67.62 kB  build\\static\\css\\main.7e952fe3.css\r\n  1.76 kB   build\\static\\js\\453.fd2153a2.chunk.js\r\n\r\nThe project was built assuming it is hosted at /.\r\nYou can control this with the homepage field in your package.json.\r\n\r\nThe build folder is ready to be deployed.\r\nYou may serve it with a static server:\r\n\r\n  npm install -g serve\r\n  serve -s build\r\n\r\nFind out more about deployment here:\r\n\r\n  https://cra.link/deployment\r\n\r\n",
+        "durationMs": 595111
+      },
+      {
+        "name": "tests-pass",
+        "kind": "process",
+        "verificationMethod": "test-results",
+        "passed": false,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 1,
+        "outputSample": "\r\n\u003E salon-system@0.1.0 test\r\n\u003E react-scripts test --watchAll=false\r\n\r\nFAIL src/App.test.tsx (31.339 s)\r\n  \u00D7 renders learn react link (1004 ms)\r\n\r\n  \u25CF renders learn react link\r\n\r\n    TestingLibraryElementError: Unable to find an element with the text: /learn react/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.\r\n\r\n    Ignored nodes: comments, script, style\r\n    \u001B[36m\u003Cbody\u003E\u001B[39m\r\n      \u001B[36m\u003Cdiv\u003E\u001B[39m\r\n        \u001B[36m\u003Cdiv\u001B[39m\r\n          \u001B[33mclass\u001B[39m=\u001B[32m\u0022public-site\u0022\u001B[39m\r\n        \u001B[36m\u003E\u001B[39m\r\n          \u001B[36m\u003Cdiv\u001B[39m\r\n            \u001B[33mclass\u001B[39m=\u001B[32m\u0022announcement\u0022\u001B[39m\r\n          \u001B[36m\u003E\u001B[39m\r\n            \u001B[36m\u003Cspan\u003E\u001B[39m\r\n              \u001B[0m\u2726\u001B[0m\r\n            \u001B[36m\u003C/span\u003E\u001B[39m\r\n            \u001B[0m A little time for you. Now taking appointments.\u001B[0m\r\n            \u001B[0m \u001B[0m\r\n            \u001B[36m\u003Ca\u001B[39m\r\n              \u001B[33mhref\u001B[39m=\u001B[32m\u0022/appointments\u0022\u001B[39m\r\n            \u001B[36m\u003E\u001B[39m\r\n              \u001B[0mFind your moment \u001B[0m\r\n              \u001B[36m\u003Cspan\u003E\u001B[39m\r\n                \u001B[0m\u2192\u001B[0m\r\n              \u001B[36m\u003C/span\u003E\u001B[39m\r\n            \u001B[36m\u003C/a\u003E\u001B[39m\r\n          \u001B[36m\u003C/div\u003E\u001B[39m\r\n          \u001B[36m\u003Cheader\u001B[39m\r\n            \u001B[33mclass\u001B[39m=\u001B[32m\u0022public-header\u0022\u001B[39m\r\n          \u001B[36m\u003E\u001B[39m\r\n            \u001B[36m\u003Ca\u001B[39m\r\n              \u001B[33maria-label\u001B[39m=\u001B[32m\u0022Janvi Makeover home\u0022\u001B[39m\r\n              \u001B[33mclass\u001B[39m=\u001B[32m\u0022public-brand\u0022\u001B[39m\r\n              \u001B[33mhref\u001B[39m=\u001B[32m\u0022/\u0022\u001B[39m\r\n            \u001B[36m\u003E\u001B[39m\r\n              \u001B[36m\u003Cimg\u001B[39m\r\n                \u001B[33malt\u001B[39m=\u001B[32m\u0022Janvi Makeover\u0022\u001B[39m\r\n                \u001B[33mclass\u001B[39m=\u001B[32m\u0022brand-logo\u0022\u001B[39m\r\n                \u001B[33msrc\u001B[39m=\u001B[32m\u0022/jaya-makeover-logo.svg\u0022\u001B[39m\r\n              \u001B[36m/\u003E\u001B[39m\r\n            \u001B[36m\u003C/a\u003E\u001B[39m\r\n            \u001B[36m\u003Cbutton\u001B[39m\r\n              \u001B[33maria-expanded\u001B[39m=\u001B[32m\u0022false\u0022\u001B[39m\r\n              \u001B[33maria-label\u001B[39m=\u001B[32m\u0022Toggle navigation\u0022\u001B[39m\r\n              \u001B[33mclass\u001B[39m=\u001B[32m\u0022public-menu-toggle\u0022\u001B[39m\r\n            \u001B[36m\u003E\u001B[39m\r\n              \u001B[0m\u2630\u001B[0m\r\n            \u001B[36m\u003C/button\u003E\u001B[39m\r\n            \u001B[36m\u003Cnav\u001B[39m\r\n              \u001B[33mclass\u001B[39m=\u001B[32m\u0022public-nav\u0022\u001B[39m\r\n            \u001B[36m\u003E\u001B[39m\r\n              \u001B[36m\u003Ca\u001B[39m\r\n                \u001B[33mclass\u001B[39m=\u001B[32m\u0022selected\u0022\u001B[39m\r\n                \u001B[33mhref\u001B[39m=\u001B[32m\u0022/\u0022\u001B[39m\r\n              \u001B[36m\u003E\u001B[39m\r\n                \u001B[36m\u003Csvg\u001B[39m\r\n                  \u001B[33maria-hidden\u001B[39m=\u001B[32m\u0022true\u0022\u001B[39m\r\n                  \u001B[33mclass\u001B[39m=\u001B[32m\u0022studio-icon\u0022\u001B[39m\r\n                  \u001B[33mfill\u001B[39m=\u001B[32m\u0022none\u0022\u001B[39m\r\n                  \u001B[33mstroke\u001B[39m=\u001B[32m\u0022currentColor\u0022\u001B[39m\r\n                  \u001B[33mstroke-linecap\u001B[39m=\u001B[32m\u0022round\u0022\u001B[39m\r\n                  \u001B[33mstroke-linejoin\u001B[39m=\u001B[32m\u0022round\u0022\u001B[39m\r\n                  \u001B[33mstroke-width\u001B[39m=\u001B[32m\u00221.7\u0022\u001B[39m\r\n                  \u001B[33mviewBox\u001B[39m=\u001B[32m\u00220 0 24 24\u0022\u001B[39m\r\n                \u001B[36m\u003E\u001B[39m\r\n                  \u001B[36m\u003Cpath\u001B[39m\r\n                    \u001B[33md\u001B[39m=\u001B[32m\u0022m3 10 9-7 9 7\u0022\u001B[39m\r\n                  \u001B[36m/\u003E\u001B[39m\r\n                  \u001B[36m\u003Cpath\u001B[39m\r\n                    \u001B[33md\u001B[39m=\u001B[32m\u0022M5 9v11h14V9M9 20v-6h6v6\u0022\u001B[39m\r\n                  \u001B[36m/\u003E\u001B[39m\r\n                \u001B[36m\u003C/svg\u003E\u001B[39m\r\n                \u001B[0mHome\u001B[0m\r\n              \u001B[36m\u003C/a\u003E\u001B[39m\r\n              \u001B[36m\u003Ca\u001B[39m\r\n                \u001B[33mclass\u001B[39m=\u001B[32m\u0022\u0022\u001B[39m\r\n                \u001B[33mhref\u001B[39m=\u001B[32m\u0022/services\u0022\u001B[39m\r\n              \u001B[36m\u003E\u001B[39m\r\n                \u001B[36m\u003Csvg\u001B[39m\r\n                  \u001B[33maria-hidden\u001B[39m=\u001B[32m\u0022true\u0022\u001B[39m\r\n                  \u001B[33mclass\u001B[39m=\u001B[32m\u0022studio-icon\u0022\u001B[39m\r\n                  \u001B[33mfill\u001B[39m=\u001B[32m\u0022none\u0022\u001B[39m\r\n                  \u001B[33mstroke\u001B[39m=\u001B[32m\u0022currentColor\u0022\u001B[39m\r\n                  \u001B[33mstroke-linecap\u001B[39m=\u001B[32m\u0022round\u0022\u001B[39m\r\n                  \u001B[33mstroke-linejoin\u001B[39m=\u001B[32m\u0022round\u0022\u001B[39m\r\n                  \u001B[33mstroke-width\u001B[39m=\u001B[32m\u00221.7\u0022\u001B[39m\r\n                  \u001B[33mviewBox\u001B[39m=\u001B[32m\u00220 0 24 24\u0022\u001B[39m\r\n                \u001B[36m\u003E\u001B[39m\r\n                  \u001B[36m\u003Cpath\u001B[39m\r\n                    \u001B[33md\u001B[39m=\u001B[32m\u0022m12 3 1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3Z\u0022\u001B[39m\r\n                  \u001B[36m/\u003E\n\u2026[truncated]",
+        "durationMs": 109257,
+        "testResults": {
+          "testFramework": "jest",
+          "runnerDetectedFrom": "output_banner",
+          "testsTotal": 1,
+          "testsPassed": 0,
+          "testsFailed": 1,
+          "testsSkipped": 0,
+          "parseFailed": false
+        }
+      },
+      {
+        "name": "home-route-serves",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!DOCTYPE html\u003E\n\u003Chtml lang=\u0022en\u0022\u003E\n  \u003Chead\u003E\n    \u003Cmeta charset=\u0022utf-8\u0022 /\u003E\n    \u003Clink rel=\u0022icon\u0022 type=\u0022image/svg\u002Bxml\u0022 href=\u0022/jaya-icon.svg\u0022 /\u003E\n    \u003Cmeta name=\u0022viewport\u0022 content=\u0022width=device-width, initial-scale=1\u0022 /\u003E\n    \u003Cmeta name=\u0022theme-color\u0022 content=\u0022#df1685\u0022 /\u003E\n    \u003Cmeta\n      name=\u0022description\u0022\n      content=\u0022Janvi Makeover \u2014 salon, beauty and makeover services. Book your appointment online.\u0022\n    /\u003E\n    \u003Clink rel=\u0022apple-touch-icon\u0022 href=\u0022/logo192.png\u0022 /\u003E\n    \u003C!--\n      manifest.json provides metadata used when your web app is installed on a\n      user\u0027s mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/\n    --\u003E\n    \u003Clink rel=\u0022manifest\u0022 href=\u0022/manifest.json\u0022 /\u003E\n    \u003C!--\n      Notice the use of  in the tags above.\n      It will be replaced with the URL of the \u0060public\u0060 folder during the build.\n      Only files inside the \u0060public\u0060 folder can be referenced from the HTML.\n\n      Unlike \u0022/favicon.ico\u0022 or \u0022favicon.ico\u0022, \u0022/favicon.ico\u0022 will\n      work correctly both with client-side routing and a non-root public URL.\n      Learn how to configure a non-root public URL by running \u0060npm run build\u0060.\n    --\u003E\n    \u003Ctitle\u003EJanvi Makeover | Beauty, Style \u0026amp; You\u003C/title\u003E\n  \u003Cscript defer src=\u0022/static/js/bundle.js\u0022\u003E\u003C/script\u003E\u003C/head\u003E\n  \u003Cbody\u003E\n    \u003Cnoscript\u003EYou need to enable JavaScript to run this app.\u003C/noscript\u003E\n    \u003Cdiv id=\u0022root\u0022\u003E\u003C/div\u003E\n    \u003C!--\n      This HTML file is a template.\n      If you open it directly in the browser, you will see an empty page.\n\n      You can add webfonts, meta tags, or analytics to this file.\n      The build step will place the bundled scripts into the \u003Cbody\u003E tag.\n\n      To begin the development, run \u0060npm start\u0060 or \u0060yarn start\u0060.\n      To create a production bundle, use \u0060npm run build\u0060 or \u0060yarn build\u0060.\n    --\u003E\n  \u003C/body\u003E\n\u003C/html\u003E\n",
+        "durationMs": 377
+      }
+    ],
+    "executions": [
+      {
+        "source": "setup[0]",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "ci"
+        ],
+        "cwd": "E:\\Janvi-Application\\janvi-salon-ui",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "production-build",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "build"
+        ],
+        "cwd": "E:\\Janvi-Application\\janvi-salon-ui",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "tests-pass",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "test",
+          "--",
+          "--watchAll=false"
+        ],
+        "cwd": "E:\\Janvi-Application\\janvi-salon-ui",
+        "env": {
+          "CI": "true"
+        },
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "home-route-serves",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "start"
+        ],
+        "cwd": "E:\\Janvi-Application\\janvi-salon-ui",
+        "env": {
+          "BROWSER": "none",
+          "HOST": "127.0.0.1",
+          "PORT": "3000"
+        },
+        "prependPath": [],
+        "platform": "win32"
+      }
+    ]
+  }
+}

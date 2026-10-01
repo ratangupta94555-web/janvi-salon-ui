@@ -90,6 +90,32 @@ const portfolioPhotos = portfolioNames.map((stamp) => {
   ];
 });
 photos.push(...portfolioPhotos);
+const videoHighlights = [
+  {
+    category: "THE STUDIO",
+    title: "A little time in the chair",
+    poster: "/images/janvi-team-certificate.jpeg",
+    src: "",
+  },
+  {
+    category: "BRIDAL",
+    title: "The finishing touches",
+    poster: "/images/janvi-bridal-finish.jpeg",
+    src: "",
+  },
+  {
+    category: "HAIR",
+    title: "Style, made personal",
+    poster: "/images/janvi-hair-styling.jpeg",
+    src: "",
+  },
+  {
+    category: "MAKEUP",
+    title: "From first brush to final look",
+    poster: "/images/janvi-makeup-action.jpeg",
+    src: "",
+  },
+];
 export default function GalleryPage({ navigate }: Props) {
   const [filter, setFilter] = useState("All");
   const visible = photos.filter(([cat]) => filter === "All" || cat === filter);
@@ -146,6 +172,52 @@ export default function GalleryPage({ navigate }: Props) {
               />
               <figcaption>{cat} · Janvi Makeover Studio</figcaption>
             </figure>
+          ))}
+        </div>
+      </section>
+      <section
+        className="gallery-video-section"
+        aria-labelledby="gallery-video-title"
+      >
+        <div className="gallery-video-heading">
+          <span className="page-kicker">MOVING MOMENTS</span>
+          <h2 id="gallery-video-title">
+            A little more <em>life</em> in the studio.
+          </h2>
+          <p>
+            Little glimpses of the care, craft, and creativity behind each look.
+          </p>
+        </div>
+        <div className="gallery-video-grid">
+          {videoHighlights.map((video) => (
+            <article className="gallery-video-card" key={video.title}>
+              <div className="gallery-video-frame">
+                {video.src ? (
+                  <video
+                    controls
+                    playsInline
+                    preload="metadata"
+                    poster={video.poster}
+                  >
+                    <source src={video.src} type="video/mp4" />
+                  </video>
+                ) : (
+                  <div className="gallery-video-placeholder">
+                    <img src={video.poster} alt="" />
+                    <span className="gallery-video-play" aria-hidden="true">
+                      ▶
+                    </span>
+                    <span className="gallery-video-status">
+                      Video coming soon
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="gallery-video-copy">
+                <span>{video.category}</span>
+                <h3>{video.title}</h3>
+              </div>
+            </article>
           ))}
         </div>
       </section>
