@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import AdminDashboard from "./components/Admin/AdminDashboard";
+import AdminLogin from "./components/Admin/AdminLogin";
 import PublicLayout from "./components/layouts/PublicLayout";
 import LandingPage from "./pages/LandingPage";
 import AppointmentsPage from "./pages/AppointmentsPage";
@@ -16,6 +17,7 @@ function App() {
   const [path, setPath] = useState(() =>
     normalizePath(window.location.pathname),
   );
+  const [adminAuthenticated, setAdminAuthenticated] = useState(false);
   useEffect(() => {
     const onPop = () => setPath(normalizePath(window.location.pathname));
     window.addEventListener("popstate", onPop);
@@ -25,8 +27,16 @@ function App() {
     window.history.pushState({}, "", to);
     setPath(normalizePath(to));
   };
-  if (path === "/admin" || path.startsWith("/admin/"))
-    return <AdminDashboard />;
+  if (path === "/admin" || path.startsWith("/admin/")) {
+    return adminAuthenticated ? (
+      <AdminDashboard onLogout={() => setAdminAuthenticated(false)} />
+    ) : (
+      <AdminLogin
+        navigate={navigate}
+        onAuthenticated={() => setAdminAuthenticated(true)}
+      />
+    );
+  }
   const pageProps = { navigate };
   let page: React.ReactNode;
   switch (path) {

@@ -18,7 +18,8 @@ type IconName =
   | "sparkle"
   | "chevron"
   | "close"
-  | "menu";
+  | "menu"
+  | "logout";
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const common = {
     width: size,
@@ -116,6 +117,12 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
         <path d="M4 6h16M4 12h16M4 18h16" />
       </>
     ),
+    logout: (
+      <>
+        <path d="M10 17l5-5-5-5M15 12H3" />
+        <path d="M12 3h6a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-6" />
+      </>
+    ),
   };
   return <svg {...common}>{shapes[name]}</svg>;
 }
@@ -181,7 +188,9 @@ const navItems: { label: string; icon: IconName }[] = [
   { label: "Reports", icon: "chart" },
 ];
 
-function App() {
+type AdminDashboardProps = { onLogout: () => void };
+
+function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [page, setPage] = useState("Overview");
   const [appointments, setAppointments] = useState(initialAppointments);
   const [query, setQuery] = useState("");
@@ -382,6 +391,14 @@ function App() {
               onClick={() => notify("Profile settings opened")}
             >
               JL
+            </button>
+            <button
+              className="icon-button"
+              aria-label="Log out"
+              title="Log out"
+              onClick={onLogout}
+            >
+              <Icon name="logout" />
             </button>
           </div>
         </header>
@@ -902,9 +919,17 @@ function App() {
                       : page === "Services"
                         ? [
                             ["Signature haircut", "Hair · 45 min", "₹8,600"],
-                            ["Balayage & gloss", "Color · 2 hr 30 min", "₹14,400"],
+                            [
+                              "Balayage & gloss",
+                              "Color · 2 hr 30 min",
+                              "₹14,400",
+                            ],
                             ["Gel manicure", "Nails · 1 hr", "₹6,700"],
-                            ["Deep conditioning", "Treatment · 45 min", "₹8,200"],
+                            [
+                              "Deep conditioning",
+                              "Treatment · 45 min",
+                              "₹8,200",
+                            ],
                             ["Blowout", "Styling · 45 min", "₹6,200"],
                             ["Brow shaping", "Beauty · 30 min", "₹3,800"],
                           ]
@@ -1057,7 +1082,4 @@ function App() {
     </div>
   );
 }
-export default App;
-
-
-
+export default AdminDashboard;
