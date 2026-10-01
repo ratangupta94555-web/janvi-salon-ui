@@ -1,0 +1,48 @@
+.public-site .booking-page > .appointment-hero {
+  width: calc(100% + 40px);
+  margin: 0 -20px;
+}
+
+.about-hero-visual .hero-detail-photo {
+  right: -8px;
+  bottom: 30px;
+  width: clamp(118px, 25%, 154px);
+  padding: 7px 7px 29px;
+  transform: rotate(4deg);
+}
+
+.about-hero-visual .hero-detail-photo > img {
+  display: block;
+  width: 100%;
+  height: clamp(132px, 22vw, 162px);
+  object-fit: cover;
+  object-position: center 30%;
+}
+
+.about-hero-visual .hero-detail-photo > span {
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  color: #76636c;
+  font:
+    italic 10px Georgia,
+    serif;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .public-site .booking-page > .appointment-hero {
+    width: calc(100% + 24px);
+    margin-inline: -12px;
+  }
+
+  .about-hero-visual .hero-detail-photo {
+    right: 1%;
+    bottom: 10px;
+    width: clamp(106px, 34%, 130px);
+  }
+
+  .about-hero-visual .hero-detail-photo > img {
+    height: 118px;
+  }
+}

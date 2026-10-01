@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import "./CustomerPages.css";
+import PublicEditorialHero from "../components/common/PublicEditorialHero";
+import StudioHighlights from "../components/common/StudioHighlights";
 type Props = { navigate: (to: string) => void };
 const questions = [
   [
@@ -31,15 +33,34 @@ export default function FAQPage({ navigate }: Props) {
   const [open, setOpen] = useState<number | null>(0);
   return (
     <main className="customer-page faq-page">
-      <section className="inner-title">
-        <span className="page-kicker">THE LITTLE DETAILS</span>
-        <h1>
-          A few things
-          <br />
-          you might <em>wonder.</em>
-        </h1>
-        <p>And if we missed your question, we’re just a note away.</p>
-      </section>
+      <PublicEditorialHero
+        className="faq-page-hero"
+        kicker="THE LITTLE DETAILS"
+        title={
+          <>
+            A few things
+            <br />
+            you might <em>wonder.</em>
+          </>
+        }
+        description="And if we missed your question, we’re just a note away."
+        image="/images/jaya-bridal-makeup.png"
+        imageAlt="Janvi applying makeup for a bride"
+        secondaryImage="/images/jaya-makeup-training.png"
+        secondaryImageAlt="A makeup artist learning a new technique"
+        secondaryCaption="Here to help"
+        caption="Your questions, answered"
+        index="06"
+        imageLabel="GOOD TO KNOW"
+        note={
+          <>
+            Your visit <i>·</i> made easier
+          </>
+        }
+        actionLabel="Get in touch"
+        onAction={() => navigate("/contact")}
+      />
+      <StudioHighlights page="faq" />
       <section className="faq-layout">
         <div className="faq-list">
           {questions.map(([q, a], i) => (

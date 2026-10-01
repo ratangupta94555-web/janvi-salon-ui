@@ -1,98 +1,134 @@
 import React from "react";
 import "./CustomerPages.css";
+import StudioHighlights from "../components/common/StudioHighlights";
 type Props = { navigate: (to: string) => void };
 export default function AboutPage({ navigate }: Props) {
   return (
-    <main className="customer-page">
-      <section className="inner-hero about-hero">
-        <div>
-          <span className="page-kicker">A LITTLE ABOUT US</span>
+    <main className="customer-page about-page">
+      <section className="inner-hero about-hero public-page-hero">
+        <div className="about-hero-copy">
+          <span className="page-kicker">MEET JANVI MAKEOVER</span>
           <h1>
-            Beauty with
+            Beauty that feels
             <br />
-            <em>room to breathe.</em>
+            <em>like you.</em>
           </h1>
           <p>
-            We made the kind of salon we always wished existed: warm, unhurried,
-            and full of people who really listen.
+            A welcoming beauty studio for thoughtful artistry, personal care,
+            and looks that feel completely your own.
           </p>
+          <button
+            className="editorial-button"
+            onClick={() => navigate("/appointments")}
+          >
+            Book your visit <span>↗</span>
+          </button>
+          <span className="about-hero-note">
+            Hair <i>·</i> Makeup <i>·</i> Beauty
+          </span>
         </div>
-        <img
-          src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1100&q=85"
-          alt="Sunlit, welcoming salon studio"
-        />
+        <div className="about-hero-visual">
+          <img
+            src="/images/janvi-stylist-portrait.jpeg"
+            alt="Janvi, the artist behind Janvi Makeover"
+          />
+          <div className="about-detail-photo hero-detail-photo">
+            <img
+              src="/images/janvi-bridal-closeup.jpeg"
+              alt="Janvi applying bridal makeup"
+            />
+            <span>Artistry, up close</span>
+          </div>
+          <span className="about-hero-leaves" aria-hidden="true" />
+          <span className="about-hero-caption">
+            <i>✳</i> Personal beauty, by Janvi
+          </span>
+          <span className="about-image-index">
+            01 <i>/</i> THE STUDIO
+          </span>
+        </div>
       </section>
-      <section className="story-block">
-        <span className="page-kicker">OUR WAY OF DOING THINGS</span>
-        <h2>
-          Good work starts
-          <br />
-          with a <em>good feeling.</em>
-        </h2>
-        <p>
-          Atelier began with a simple idea: the best beauty work happens when
-          you feel comfortable enough to be yourself. So we built a neighborhood
-          studio around that feeling. There’s no rush, no pressure to be anyone
-          else, and always time for one more question.
-        </p>
-        <p>
-          Our artists bring thoughtful technique and a gentle point of view to
-          every appointment. We’ll help you find what feels right today, and
-          make a plan that still feels like you tomorrow.
-        </p>
-        <button
-          className="underlined-link"
-          onClick={() => navigate("/appointments")}
-        >
-          Come meet us <span>↗</span>
-        </button>
-      </section>
-      <section className="values-row">
-        <article>
-          <span>01</span>
-          <h3>Listen first</h3>
-          <p>
-            Your story, your routine, your comfort. It all belongs in the
-            conversation.
-          </p>
-        </article>
-        <article>
-          <span>02</span>
-          <h3>Keep it thoughtful</h3>
-          <p>
-            Considered products, gentle practices, and care that lasts beyond
-            the chair.
-          </p>
-        </article>
-        <article>
-          <span>03</span>
-          <h3>Make room</h3>
-          <p>
-            For all people, all hair, and all the ways of feeling beautiful.
-          </p>
-        </article>
-      </section>
-      <section className="team-feature">
-        <img
-          src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=760&q=85"
-          alt="Atelier stylist Isabella"
-        />
-        <div>
-          <span className="page-kicker">THE PEOPLE BEHIND THE MIRROR</span>
+      <StudioHighlights page="about" />
+      <section className="story-block about-story">
+        <div className="about-story-heading">
+          <span className="page-kicker">A PERSONAL KIND OF BEAUTY</span>
           <h2>
-            Good hands.
+            It starts with
             <br />
-            <em>Good hearts.</em>
+            <em>listening.</em>
           </h2>
+        </div>
+        <div className="about-story-copy">
           <p>
-            Our small team of artists brings different specialties and one
-            shared belief: you should leave feeling cared for, not just styled.
+            At Janvi Makeover, every appointment starts with you: your ideas,
+            your comfort, and the look you want to feel good in. We take time to
+            understand what you have in mind before we pick up a brush.
+          </p>
+          <p>
+            From everyday beauty to a special occasion, our aim is simple: warm
+            care, thoughtful artistry, and a result that still feels like you.
           </p>
           <button
             className="underlined-link"
+            onClick={() => navigate("/services")}
+          >
+            Explore our services <span>↗</span>
+          </button>
+        </div>
+        <figure className="about-story-visual">
+          <img
+            src="/images/janvi-bridal-closeup.jpeg"
+            alt="Janvi carefully applying bridal makeup"
+          />
+          <figcaption>
+            <span>01</span> A look made personal
+          </figcaption>
+        </figure>
+      </section>
+      <section
+        className="values-row about-values-row"
+        aria-label="What matters at Janvi Makeover"
+      >
+        <article>
+          <span>01</span>
+          <h3>Listen first</h3>
+          <p>Your ideas and comfort shape the appointment from the start.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Care with intention</h3>
+          <p>Thoughtful details and artistry, tailored to the look you want.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Feel like yourself</h3>
+          <p>Leave feeling cared for, confident, and comfortably you.</p>
+        </article>
+      </section>
+      <section className="team-feature about-team-feature">
+        <div className="about-team-visual">
+          <img
+            src="/images/janvi-bridal-closeup.jpeg"
+            alt="Janvi applying bridal makeup with a careful finishing touch"
+          />
+        </div>
+        <div className="about-team-copy">
+          <span className="page-kicker">THOUGHTFUL ARTISTRY, EVERY VISIT</span>
+          <h2>
+            Your moment.
+            <br />
+            <em>Your kind of beautiful.</em>
+          </h2>
+          <p>
+            Whether you are getting ready for a celebration or treating yourself
+            to a little refresh, Janvi brings care and attention to every detail
+            of your look.
+          </p>
+          <button
+            className="editorial-button"
             onClick={() => navigate("/appointments")}
           >
-            Meet us in the studio <span>↗</span>
+            Make an appointment <span>↗</span>
           </button>
         </div>
       </section>
