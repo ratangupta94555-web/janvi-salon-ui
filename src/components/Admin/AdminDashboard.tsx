@@ -1,5 +1,28 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import AdminServices from "./AdminServices";
+import AdminPagination from "./AdminPagination";
 import "./AdminDashboard.css";
+import "./AdminAppointments.css";
+import BrandLoader from "../common/BrandLoader";
+import {
+  APPOINTMENT_CLOSING_MINUTES,
+  APPOINTMENT_SLOT_MINUTES,
+  APPOINTMENT_STATUSES,
+  APPOINTMENT_TIME_SLOTS,
+  appointmentApi,
+  Appointment,
+  AppointmentStatus,
+  appointmentTimeToMinutes,
+  formatAppointmentTime,
+  isValidPhoneNumber,
+  isAppointmentTimeSlotUnavailable,
+  normalizeAppointmentStatus,
+} from "../../api/appointments";
+import {
+  ApiSubService,
+  formatPrice,
+} from "../../api/services";
+import useServices from "../../api/useServices";
 
 type IconName =
   | "grid"
@@ -7,9 +30,7 @@ type IconName =
   | "users"
   | "scissors"
   | "chart"
-  | "settings"
   | "search"
-  | "bell"
   | "plus"
   | "arrow"
   | "clock"
@@ -18,6 +39,7 @@ type IconName =
   | "sparkle"
   | "chevron"
   | "close"
+  | "eye"
   | "menu"
   | "logout";
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
@@ -67,21 +89,10 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
         <path d="m19 9-5 5-4-4-5 5" />
       </>
     ),
-    settings: (
-      <>
-        <circle cx="12" cy="12" r="3" />
-        <path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.8 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.8-1l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.8-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.8 1l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 2Z" />
-      </>
-    ),
     search: (
       <>
         <circle cx="11" cy="11" r="7" />
         <path d="m20 20-4-4" />
-      </>
-    ),
-    bell: (
-      <>
-        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
       </>
     ),
     plus: <path d="M12 5v14M5 12h14" />,
@@ -112,6 +123,12 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
     ),
     chevron: <path d="m9 18 6-6-6-6" />,
     close: <path d="m18 6-12 12M6 6l12 12" />,
+    eye: (
+      <>
+        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+        <circle cx="12" cy="12" r="2.5" />
+      </>
+    ),
     menu: (
       <>
         <path d="M4 6h16M4 12h16M4 18h16" />
@@ -127,152 +144,504 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   return <svg {...common}>{shapes[name]}</svg>;
 }
 
-type Appointment = {
-  id: number;
-  name: string;
-  service: string;
-  time: string;
-  stylist: string;
-  color: string;
-  initials: string;
-  status: "Confirmed" | "Checked in" | "Upcoming";
-};
-const initialAppointments: Appointment[] = [
-  {
-    id: 1,
-    name: "Sophie Laurent",
-    service: "Balayage & gloss",
-    time: "9:00 AM",
-    stylist: "Isabella",
-    color: "lavender",
-    initials: "SL",
-    status: "Checked in",
-  },
-  {
-    id: 2,
-    name: "Maya Chen",
-    service: "Signature haircut",
-    time: "10:30 AM",
-    stylist: "Olivia",
-    color: "peach",
-    initials: "MC",
-    status: "Confirmed" as const,
-  },
-  {
-    id: 3,
-    name: "Amara Johnson",
-    service: "Gel manicure",
-    time: "11:00 AM",
-    stylist: "Noah",
-    color: "sage",
-    initials: "AJ",
-    status: "Confirmed" as const,
-  },
-  {
-    id: 4,
-    name: "Charlotte Reed",
-    service: "Deep conditioning",
-    time: "1:30 PM",
-    stylist: "Isabella",
-    color: "blue",
-    initials: "CR",
-    status: "Upcoming",
-  },
-];
 const navItems: { label: string; icon: IconName }[] = [
-  { label: "Overview", icon: "grid" },
+  { label: "Dashboard", icon: "grid" },
   { label: "Appointments", icon: "calendar" },
-  { label: "Clients", icon: "users" },
   { label: "Services", icon: "scissors" },
-  { label: "Team", icon: "users" },
-  { label: "Reports", icon: "chart" },
+  { label: "Treatments", icon: "sparkle" },
 ];
 
-type AdminDashboardProps = { onLogout: () => void };
+type AdminDashboardProps = {
+  pathname: string;
+  onLogout: () => void;
+  onNavigate: (to: string) => void;
+};
 
-function AdminDashboard({ onLogout }: AdminDashboardProps) {
-  const [page, setPage] = useState("Overview");
-  const [appointments, setAppointments] = useState(initialAppointments);
+const adminPagePaths: Record<string, string> = {
+  Dashboard: "/admin/dashboard",
+  Appointments: "/admin/appointments",
+  Clients: "/admin/clients",
+  Services: "/admin/services",
+  Treatments: "/admin/treatments",
+};
+
+function pageFromPath(pathname: string): string {
+  return (
+    Object.entries(adminPagePaths).find(([, path]) => path === pathname)?.[0] ??
+    "Dashboard"
+  );
+}
+
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function getRecentDateKeys(days: number): string[] {
+  const today = new Date();
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - (days - index - 1),
+    );
+    return localDateKey(date);
+  });
+}
+
+function appointmentItemsTotal(appointment: Appointment): number | undefined {
+  if (!appointment.items?.length) return undefined;
+  const itemTotals = appointment.items.map((item) => item.totalPrice);
+  if (!itemTotals.every(Number.isFinite)) return undefined;
+  return itemTotals.reduce((total, itemTotal) => total + itemTotal, 0);
+}
+
+function appointmentBookedValue(appointment: Appointment): number {
+  return (
+    appointment.totalAmount ??
+    appointmentItemsTotal(appointment) ??
+    appointment.subtotal ??
+    0
+  );
+}
+
+function compactCurrency(value: number): string {
+  if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+  if (value >= 1000) return `₹${(value / 1000).toFixed(1)}k`;
+  return formatPrice(value);
+}
+
+function AdminDashboard({
+  pathname,
+  onLogout,
+  onNavigate,
+}: AdminDashboardProps) {
+  const page = pageFromPath(pathname);
+  const {
+    services: serviceCatalogue,
+    loading: serviceCatalogueLoading,
+    error: serviceCatalogueError,
+  } = useServices();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [dashboardAppointments, setDashboardAppointments] = useState<
+    Appointment[]
+  >([]);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState("");
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [appointmentsError, setAppointmentsError] = useState("");
+  const [appointmentsReload, setAppointmentsReload] = useState(0);
   const [query, setQuery] = useState("");
-  const [bookingOpen, setBookingOpen] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [toast, setToast] = useState("");
-  const [noticeOpen, setNoticeOpen] = useState(false);
-  const [dateLabel, setDateLabel] = useState("Today, June 18");
-  const [form, setForm] = useState({
-    name: "",
-    service: "Signature haircut",
-    time: "2:00 PM",
-    stylist: "Isabella",
+  const [selectedDate, setSelectedDate] = useState(() => {
+    return localDateKey(new Date());
   });
+  const dashboardDateKeys = useMemo(() => getRecentDateKeys(7), []);
+  const dashboardToday = dashboardDateKeys[dashboardDateKeys.length - 1];
+  const [appointmentStatusUpdatingId, setAppointmentStatusUpdatingId] =
+    useState<number | null>(null);
+  const [detailsAppointment, setDetailsAppointment] =
+    useState<Appointment | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
+  const [appointmentPage, setAppointmentPage] = useState(1);
+  const appointmentPageSize = 10;
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const [bookingName, setBookingName] = useState("");
+  const [bookingEmail, setBookingEmail] = useState("");
+  const [bookingPhone, setBookingPhone] = useState("");
+  const [bookingDate, setBookingDate] = useState(selectedDate);
+  const [bookingTime, setBookingTime] = useState("");
+  const [bookingAppointments, setBookingAppointments] = useState<Appointment[]>(
+    [],
+  );
+  const [bookingAvailabilityLoading, setBookingAvailabilityLoading] =
+    useState(false);
+  const [bookingAvailabilityError, setBookingAvailabilityError] = useState("");
+  const [bookingNotes, setBookingNotes] = useState("");
+  const [bookingTreatmentIds, setBookingTreatmentIds] = useState<number[]>([]);
+  const selectedBookingTreatments = serviceCatalogue.flatMap((service) =>
+    service.subServices
+      .filter((treatment) => bookingTreatmentIds.includes(treatment.id))
+      .map((treatment) => treatment.name),
+  );
+  const bookingTotal = serviceCatalogue.reduce(
+    (total, service) =>
+      total +
+      service.subServices.reduce(
+        (serviceTotal, treatment) =>
+          bookingTreatmentIds.includes(treatment.id)
+            ? serviceTotal + (treatment.offerPrice ?? treatment.price)
+            : serviceTotal,
+        0,
+      ),
+    0,
+  );
+  const bookingDurationMinutes = Math.max(
+    APPOINTMENT_SLOT_MINUTES,
+    serviceCatalogue.reduce(
+      (total, service) =>
+        total +
+        service.subServices.reduce(
+          (serviceTotal, treatment) =>
+            bookingTreatmentIds.includes(treatment.id)
+              ? serviceTotal + treatment.durationMinutes
+              : serviceTotal,
+          0,
+        ),
+      0,
+    ),
+  );
+  const todayLabel = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  })
+    .format(new Date())
+    .toUpperCase();
+  useEffect(() => {
+    if (page !== "Appointments") return;
+    const controller = new AbortController();
+    setAppointmentsLoading(true);
+    setAppointmentsError("");
+    appointmentApi
+      .byDate(selectedDate, controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setAppointments(result);
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setAppointmentsError(
+            error instanceof Error
+              ? error.message
+              : "Appointments could not be loaded.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAppointmentsLoading(false);
+      });
+    return () => controller.abort();
+  }, [page, selectedDate, appointmentsReload]);
+
+  useEffect(() => {
+    if (page !== "Dashboard") return;
+    const controller = new AbortController();
+    setDashboardLoading(true);
+    setDashboardError("");
+    Promise.all(
+      dashboardDateKeys.map((date) =>
+        appointmentApi.byDate(date, controller.signal),
+      ),
+    )
+      .then((dailyAppointments) => {
+        if (!controller.signal.aborted) {
+          setDashboardAppointments(dailyAppointments.flat());
+        }
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setDashboardError(
+            error instanceof Error
+              ? error.message
+              : "Dashboard appointment data could not be loaded.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDashboardLoading(false);
+      });
+    return () => controller.abort();
+  }, [page, dashboardDateKeys, appointmentsReload]);
+
+  useEffect(() => {
+    if (!bookingOpen || !bookingDate) return;
+    const controller = new AbortController();
+    setBookingAvailabilityLoading(true);
+    setBookingAvailabilityError("");
+    setBookingAppointments([]);
+    appointmentApi
+      .byDate(bookingDate, controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setBookingAppointments(result);
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setBookingAvailabilityError(
+            error instanceof Error
+              ? error.message
+              : "Could not check appointment availability.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setBookingAvailabilityLoading(false);
+      });
+    return () => controller.abort();
+  }, [bookingOpen, bookingDate, appointmentsReload]);
+
+  const appointmentName = useCallback(
+    (item: Appointment) =>
+      item.customerName ||
+      `${item.customer?.firstName ?? item.firstName ?? ""} ${item.customer?.lastName ?? item.lastName ?? ""}`.trim() ||
+      item.customer?.phone ||
+      item.phone ||
+      `Appointment #${item.id}`,
+    [],
+  );
+  const appointmentServices = useCallback(
+    (item: Appointment) =>
+      item.items?.map((service) => service.subServiceName).join(", ") ||
+      item.subServiceIds?.map((id) => `Service #${id}`).join(", ") ||
+      "Services not listed",
+    [],
+  );
+  const appointmentTotal = (item: Appointment) =>
+    item.totalAmount ??
+    appointmentItemsTotal(item) ??
+    item.subtotal;
+  const appointmentTime = (item: Appointment) =>
+    item.startTime ?? item.preferredStartTime ?? "Time not set";
+  const openAppointmentDetails = async (item: Appointment) => {
+    setDetailsAppointment(item);
+    setDetailsLoading(true);
+    setDetailsError("");
+    try {
+      setDetailsAppointment(await appointmentApi.get(item.id));
+    } catch (error) {
+      setDetailsError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load appointment details.",
+      );
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
   const filteredAppointments = useMemo(
     () =>
-      appointments.filter((a) =>
-        `${a.name} ${a.service} ${a.stylist}`
+      appointments.filter((item) =>
+        `${appointmentName(item)} ${appointmentServices(item)} ${item.customer?.phone ?? item.phone ?? ""}`
           .toLowerCase()
           .includes(query.toLowerCase()),
       ),
-    [appointments, query],
+    [appointments, appointmentName, appointmentServices, query],
   );
+  const appointmentPageCount = Math.max(
+    1,
+    Math.ceil(filteredAppointments.length / appointmentPageSize),
+  );
+  const currentAppointmentPage = Math.min(
+    appointmentPage,
+    appointmentPageCount,
+  );
+  const visibleAppointments = filteredAppointments.slice(
+    (currentAppointmentPage - 1) * appointmentPageSize,
+    currentAppointmentPage * appointmentPageSize,
+  );
+  useEffect(() => {
+    setAppointmentPage(1);
+  }, [query, selectedDate]);
   const notify = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2800);
   };
-  const createBooking = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!form.name.trim()) return;
-    const initials = form.name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
-    setAppointments((prev) =>
-      [
-        ...prev,
-        {
-          id: Date.now(),
-          name: form.name,
-          service: form.service,
-          time: form.time,
-          stylist: form.stylist,
-          color: "lavender",
-          initials,
-          status: "Confirmed" as const,
-        },
-      ].sort((a, b) => a.time.localeCompare(b.time)),
+  const toggleBookingTreatment = (treatment: ApiSubService) => {
+    setBookingTreatmentIds((current) =>
+      current.includes(treatment.id)
+        ? current.filter((id) => id !== treatment.id)
+        : [...current, treatment.id],
     );
-    setBookingOpen(false);
-    setForm({
-      name: "",
-      service: "Signature haircut",
-      time: "2:00 PM",
-      stylist: "Isabella",
-    });
-    notify("Your new appointment is booked.");
   };
-  const toggleCheckin = (id: number) =>
-    setAppointments((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              status: a.status === "Checked in" ? "Confirmed" : "Checked in",
-            }
-          : a,
-      ),
+  const isBookingSlotUnavailable = (slotStart: number) => {
+    return isAppointmentTimeSlotUnavailable(
+      slotStart,
+      bookingDurationMinutes,
+      bookingAppointments,
     );
+  };
+  const submitAdminBooking = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    if (!bookingName.trim()) {
+      setBookingError("Enter the client name.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingEmail.trim())) {
+      setBookingError("Enter a valid email address.");
+      return;
+    }
+    if (!isValidPhoneNumber(bookingPhone)) {
+      setBookingError("Enter a valid client phone number.");
+      return;
+    }
+    if (!bookingDate || bookingDate < localDateKey(new Date())) {
+      setBookingError("Choose today or a future date.");
+      return;
+    }
+    if (!bookingTreatmentIds.length) {
+      setBookingError("Select at least one treatment.");
+      return;
+    }
+    const selectedStart = appointmentTimeToMinutes(bookingTime);
+    if (
+      selectedStart === undefined ||
+      bookingAvailabilityLoading ||
+      bookingAvailabilityError ||
+      isBookingSlotUnavailable(selectedStart)
+    ) {
+      setBookingError(
+        bookingAvailabilityError ||
+          "That time is unavailable. Please choose an available slot.",
+      );
+      return;
+    }
+    const nameParts = bookingName.trim().split(/\s+/);
+    setBookingSubmitting(true);
+    setBookingError("");
+    try {
+      await appointmentApi.create({
+        firstName: nameParts[0],
+        ...(nameParts.length > 1
+          ? { lastName: nameParts.slice(1).join(" ") }
+          : {}),
+        email: bookingEmail.trim(),
+        phone: bookingPhone.trim(),
+        subServiceIds: bookingTreatmentIds,
+        appointmentDate: bookingDate,
+        preferredStartTime: bookingTime,
+        ...(bookingNotes.trim() ? { notes: bookingNotes.trim() } : {}),
+      });
+      setBookingOpen(false);
+      setSelectedDate(bookingDate);
+      setAppointmentsReload((current) => current + 1);
+      notify("Appointment scheduled.");
+      setBookingName("");
+      setBookingEmail("");
+      setBookingPhone("");
+      setBookingTime("");
+      setBookingNotes("");
+      setBookingTreatmentIds([]);
+    } catch (error) {
+      setBookingError(
+        error instanceof Error
+          ? error.message
+          : "The appointment could not be scheduled.",
+      );
+    } finally {
+      setBookingSubmitting(false);
+    }
+  };
+  const updateAppointmentStatus = async (
+    appointment: Appointment,
+    status: AppointmentStatus,
+  ) => {
+    if (normalizeAppointmentStatus(appointment.status) === status) return;
+    setAppointmentStatusUpdatingId(appointment.id);
+    try {
+      await appointmentApi.updateStatus(appointment.id, status);
+      setAppointmentsReload((current) => current + 1);
+      notify("Appointment status updated.");
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Appointment status could not be updated.",
+      );
+      setAppointmentsReload((current) => current + 1);
+    } finally {
+      setAppointmentStatusUpdatingId(null);
+    }
+  };
+  const dashboardActiveAppointments = dashboardAppointments.filter((item) => {
+    const status = normalizeAppointmentStatus(item.status);
+    return status !== "CANCELLED" && status !== "NO_SHOW";
+  });
+  const dashboardTodayAppointments = dashboardActiveAppointments.filter(
+    (item) => item.appointmentDate === dashboardToday,
+  );
+  const dashboardTodayValue = dashboardTodayAppointments.reduce(
+    (total, item) => total + appointmentBookedValue(item),
+    0,
+  );
+  const dashboardTreatmentsThisWeek = dashboardActiveAppointments.reduce(
+    (total, appointment) =>
+      total +
+      (appointment.items ?? []).reduce(
+        (itemTotal, item) => itemTotal + (item.quantity ?? 1),
+        0,
+      ),
+    0,
+  );
+  const dashboardDailyValues = dashboardDateKeys.map((date) => ({
+    date,
+    value: dashboardActiveAppointments
+      .filter((item) => item.appointmentDate === date)
+      .reduce((total, item) => total + appointmentBookedValue(item), 0),
+  }));
+  const dashboardMaxDailyValue = Math.max(
+    1,
+    ...dashboardDailyValues.map((day) => day.value),
+  );
+  const dashboardChartPoints = dashboardDailyValues
+    .map((day, index) => {
+      const x =
+        dashboardDailyValues.length === 1
+          ? 0
+          : (index / (dashboardDailyValues.length - 1)) * 390;
+      const y = 112 - (day.value / dashboardMaxDailyValue) * 95;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  const dashboardAreaPath = `M 0 126 L ${dashboardChartPoints
+    .split(" ")
+    .map((point) => point.replace(",", " "))
+    .join(" L ")} L 390 126 Z`;
+  const dashboardPopularTreatments = (() => {
+    const treatments = new Map<
+      string,
+      { name: string; bookings: number; bookedValue: number }
+    >();
+    dashboardActiveAppointments.forEach((appointment) => {
+      (appointment.items ?? []).forEach((item) => {
+        const name = item.subServiceName || item.serviceName || "Treatment";
+        const key = `${item.subServiceId ?? name}:${name}`;
+        const summary = treatments.get(key) ?? {
+          name,
+          bookings: 0,
+          bookedValue: 0,
+        };
+        summary.bookings += item.quantity ?? 1;
+        summary.bookedValue += item.totalPrice ?? 0;
+        treatments.set(key, summary);
+      });
+    });
+    return Array.from(treatments.values())
+      .sort(
+        (first, second) =>
+          second.bookings - first.bookings ||
+          second.bookedValue - first.bookedValue,
+      )
+      .slice(0, 3);
+  })();
   const selectPage = (label: string) => {
-    setPage(label);
+    onNavigate(adminPagePaths[label] ?? adminPagePaths.Dashboard);
     setMobileMenu(false);
   };
   return (
     <div className="app-shell">
       <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
         <a
-          href="#overview"
+          href={adminPagePaths.Dashboard}
           className="brand"
-          onClick={() => selectPage("Overview")}
+          onClick={(event) => {
+            event.preventDefault();
+            selectPage("Dashboard");
+          }}
         >
           <span className="brand-mark">
             <img src="/jaya-icon.svg" alt="" />
@@ -301,33 +670,12 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
               <Icon name={item.icon} />
               <span>{item.label}</span>
               {item.label === "Appointments" && (
-                <span className="nav-count">8</span>
+                <span className="nav-count">{appointments.length}</span>
               )}
             </button>
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="upgrade-card">
-            <div className="upgrade-icon">
-              <Icon name="sparkle" size={17} />
-            </div>
-            <strong>A little more room?</strong>
-            <p>Grow your studio with our Pro plan.</p>
-            <button
-              onClick={() => notify("You’re on the list — we’ll be in touch!")}
-            >
-              Explore Pro <Icon name="arrow" size={14} />
-            </button>
-            <span className="upgrade-orb orb-one" />
-            <span className="upgrade-orb orb-two" />
-          </div>
-          <button
-            className="nav-item settings-link"
-            onClick={() => selectPage("Settings")}
-          >
-            <Icon name="settings" />
-            <span>Settings</span>
-          </button>
           <button
             className="profile-row"
             onClick={() => notify("Profile settings opened")}
@@ -360,32 +708,18 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             Workspace <span>/</span> <strong>{page}</strong>
           </div>
           <div className="topbar-actions">
-            <label className="search-box">
-              <Icon name="search" size={17} />
-              <input
-                aria-label="Search appointments"
-                placeholder="Search anything..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              <kbd>⌘ K</kbd>
-            </label>
-            <div className="notice-wrap">
-              <button
-                className="icon-button notification-button"
-                aria-label="Notifications"
-                onClick={() => setNoticeOpen(!noticeOpen)}
-              >
-                <Icon name="bell" />
-                <i />
-              </button>
-              {noticeOpen && (
-                <div className="notice-popover">
-                  <strong>You’re all caught up</strong>
-                  <p>Your latest studio updates will show up here.</p>
-                </div>
-              )}
-            </div>
+            {page === "Appointments" && (
+              <label className="search-box">
+                <Icon name="search" size={17} />
+                <input
+                  aria-label="Search appointments"
+                  placeholder="Search appointments..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <kbd>⌘ K</kbd>
+              </label>
+            )}
             <button
               className="top-avatar"
               onClick={() => notify("Profile settings opened")}
@@ -403,257 +737,148 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </div>
         </header>
         <div className="page-wrap">
+          {page !== "Services" && page !== "Treatments" && (
           <div className="welcome-row">
             <div>
               <div className="eyebrow">
-                <span className="live-dot" /> WEDNESDAY, JUNE 18, 2025
+                <span className="live-dot" /> {todayLabel}
               </div>
               <h1>
-                {page === "Overview" ? (
+                {page === "Dashboard" ? (
                   <>
-                    Good morning, Jamie <span className="wave">✳</span>
+                    Studio overview <span className="wave">✳</span>
                   </>
                 ) : (
                   page
                 )}
               </h1>
               <p className="welcome-subtitle">
-                {page === "Overview"
+                {page === "Dashboard"
                   ? "Here’s what’s happening at your studio today."
                   : `Your ${page.toLowerCase()} at a glance.`}
               </p>
             </div>
-            <div className="welcome-actions">
-              <div className="date-picker">
-                <Icon name="calendar" size={16} />
-                <select
-                  aria-label="Select date"
-                  value={dateLabel}
-                  onChange={(e) => setDateLabel(e.target.value)}
+            {page === "Appointments" && (
+              <div className="welcome-actions">
+                <div className="date-picker">
+                  <Icon name="calendar" size={16} />
+                  <input
+                    type="date"
+                    aria-label="Select date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => {
+                    setBookingDate(selectedDate);
+                    setBookingTime("");
+                    setBookingError("");
+                    setBookingAvailabilityError("");
+                    setBookingAvailabilityLoading(true);
+                    setBookingOpen(true);
+                  }}
                 >
-                  <option>Today, June 18</option>
-                  <option>Tomorrow, June 19</option>
-                  <option>This week</option>
-                </select>
-                <Icon name="chevron" size={14} />
+                  <Icon name="plus" size={17} /> New appointment
+                </button>
               </div>
-              <button
-                className="primary-button"
-                onClick={() => setBookingOpen(true)}
-              >
-                <Icon name="plus" size={17} /> New appointment
-              </button>
-            </div>
+            )}
           </div>
-          {page === "Overview" ? (
+          )}
+          {page === "Dashboard" ? (
+            dashboardLoading ? (
+              <BrandLoader
+                message="Loading studio overview"
+                detail="Gathering appointment activity for the past seven days."
+              />
+            ) : dashboardError ? (
+              <div className="dashboard-feedback panel" role="alert">
+                <strong>Studio data isn’t available right now</strong>
+                <p>{dashboardError}</p>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() =>
+                    setAppointmentsReload((current) => current + 1)
+                  }
+                >
+                  Try again
+                </button>
+              </div>
+            ) : (
             <>
-              <section className="stats-grid" aria-label="Studio statistics">
+              <section
+                className="stats-grid stats-grid-overview"
+                aria-label="Studio statistics"
+              >
                 <article className="stat-card">
                   <div className="stat-heading">
-                    TODAY’S APPOINTMENTS{" "}
-                    <span className="stat-icon lilac">
-                      <Icon name="calendar" size={17} />
-                    </span>
-                  </div>
-                  <div className="stat-value">
-                    24{" "}
-                    <span className="stat-change positive">
-                      <Icon name="arrow" size={13} /> 12%
-                    </span>
-                  </div>
-                  <div className="stat-note">
-                    vs. 21 appointments last Wednesday
-                  </div>
-                  <div className="sparkline spark-purple">
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                </article>
-                <article className="stat-card">
-                  <div className="stat-heading">
-                    TODAY’S REVENUE{" "}
+                    TODAY’S BOOKED VALUE{" "}
                     <span className="stat-icon green">
                       <span className="currency">₹</span>
                     </span>
                   </div>
                   <div className="stat-value">
-                    ₹2,72,700{" "}
-                    <span className="stat-change positive">
-                      <Icon name="arrow" size={13} /> 8.4%
-                    </span>
+                    {formatPrice(dashboardTodayValue)}
                   </div>
                   <div className="stat-note">
-                    vs. ₹2,51,600 average daily revenue
-                  </div>
-                  <div className="sparkline spark-green">
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
+                    {dashboardTodayAppointments.length} appointment
+                    {dashboardTodayAppointments.length === 1 ? "" : "s"} today
                   </div>
                 </article>
                 <article className="stat-card">
                   <div className="stat-heading">
-                    NEW CLIENTS{" "}
+                    APPOINTMENTS TODAY{" "}
                     <span className="stat-icon peach">
-                      <Icon name="users" size={17} />
+                      <Icon name="calendar" size={17} />
                     </span>
                   </div>
-                  <div className="stat-value">
-                    18{" "}
-                    <span className="stat-change positive">
-                      <Icon name="arrow" size={13} /> 4.2%
-                    </span>
-                  </div>
-                  <div className="stat-note">
-                    This month · 6 returning this week
-                  </div>
-                  <div className="mini-avatars">
-                    <span className="mini-avatar av-a">M</span>
-                    <span className="mini-avatar av-b">S</span>
-                    <span className="mini-avatar av-c">A</span>
-                    <span className="mini-avatar av-d">+</span>
-                    <small>and 14 more</small>
-                  </div>
+                  <div className="stat-value">{dashboardTodayAppointments.length}</div>
+                  <div className="stat-note">Excludes cancelled and no-show bookings</div>
                 </article>
                 <article className="stat-card">
                   <div className="stat-heading">
-                    CLIENT RETENTION{" "}
+                    TREATMENTS THIS WEEK{" "}
                     <span className="stat-icon blue">
-                      <Icon name="chart" size={17} />
+                      <Icon name="sparkle" size={17} />
                     </span>
                   </div>
-                  <div className="stat-value">
-                    84.6%{" "}
-                    <span className="stat-change positive">
-                      <Icon name="arrow" size={13} /> 2.1%
-                    </span>
-                  </div>
-                  <div className="stat-note">Looking lovely this month ✨</div>
-                  <div className="retention-bar">
-                    <span />
-                  </div>
+                  <div className="stat-value">{dashboardTreatmentsThisWeek}</div>
+                  <div className="stat-note">From appointments in the past seven days</div>
                 </article>
               </section>
-              <section className="feature-row">
-                <article className="appointments-card panel">
-                  <div className="panel-header">
-                    <div>
-                      <h2>
-                        Today’s appointments{" "}
-                        <span className="count-pill">
-                          {appointments.length}
-                        </span>
-                      </h2>
-                      <p>Your studio schedule at a glance</p>
-                    </div>
-                    <button
-                      className="text-button"
-                      onClick={() => selectPage("Appointments")}
-                    >
-                      View calendar <Icon name="arrow" size={14} />
-                    </button>
-                  </div>
-                  <div className="appointment-list">
-                    {filteredAppointments.slice(0, 4).map((item) => (
-                      <div className="appointment-row" key={item.id}>
-                        <div className="appointment-time">
-                          <strong>{item.time.split(" ")[0]}</strong>
-                          <small>{item.time.split(" ")[1]}</small>
-                        </div>
-                        <span className={`client-avatar ${item.color}`}>
-                          {item.initials}
-                        </span>
-                        <div className="appointment-info">
-                          <strong>{item.name}</strong>
-                          <span>
-                            {item.service} <i>·</i> {item.stylist}
-                          </span>
-                        </div>
-                        <span
-                          className={`status-pill ${item.status.toLowerCase().replace(" ", "-")}`}
-                        >
-                          {item.status === "Checked in" && <span />}
-                          {item.status}
-                        </span>
-                        <button
-                          className="row-more"
-                          aria-label={`Check in ${item.name}`}
-                          title="Toggle check in"
-                          onClick={() => toggleCheckin(item.id)}
-                        >
-                          <Icon name="more" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    className="schedule-footer"
-                    onClick={() => selectPage("Appointments")}
-                  >
-                    <Icon name="clock" size={15} /> 20 more appointments today{" "}
-                    <Icon name="chevron" size={14} />
-                  </button>
-                </article>
+              <section className="feature-row feature-row-overview">
                 <article className="performance-card panel">
                   <div className="panel-header">
                     <div>
                       <h2>Studio performance</h2>
-                      <p>Revenue overview</p>
+                      <p>Booked value over the past seven days</p>
                     </div>
-                    <select
-                      className="period-select"
-                      aria-label="Performance period"
-                    >
-                      <option>This week</option>
-                      <option>This month</option>
-                    </select>
                   </div>
                   <div className="chart-total">
-                    <strong>₹12,17,700</strong>
-                    <span className="stat-change positive">
-                      <Icon name="arrow" size={13} /> 12.8%
-                    </span>
+                    <strong>
+                      {formatPrice(
+                        dashboardDailyValues.reduce(
+                          (total, day) => total + day.value,
+                          0,
+                        ),
+                      )}
+                    </strong>
                   </div>
                   <div className="chart-caption">
-                    Total revenue <span>compared to last week</span>
+                    Total booked value{" "}
+                    <span>excluding cancelled and no-show appointments</span>
                   </div>
                   <div className="chart-wrap">
                     <div className="chart-y-labels">
-                      <span>₹3.84L</span>
-                      <span>₹2.88L</span>
-                      <span>₹1.92L</span>
-                      <span>₹96,000</span>
+                      <span>{compactCurrency(dashboardMaxDailyValue)}</span>
+                      <span>{compactCurrency(dashboardMaxDailyValue / 2)}</span>
+                      <span>{compactCurrency(0)}</span>
                     </div>
                     <div className="chart-area">
                       <div className="chart-gridlines">
-                        <i />
                         <i />
                         <i />
                         <i />
@@ -662,7 +887,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         viewBox="0 0 390 126"
                         preserveAspectRatio="none"
                         className="revenue-chart"
-                        aria-label="Revenue chart"
+                        role="img"
+                        aria-label="Daily booked value for the past seven days"
                       >
                         <defs>
                           <linearGradient
@@ -685,40 +911,46 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           </linearGradient>
                         </defs>
                         <path
-                          d="M0,96 C20,89 35,91 56,77 S88,70 111,77 S146,82 166,54 S199,56 221,48 S252,60 277,39 S310,45 331,24 S365,33 390,10 V126 H0Z"
+                          d={dashboardAreaPath}
                           fill="url(#chartFill)"
                         />
                         <path
-                          d="M0,96 C20,89 35,91 56,77 S88,70 111,77 S146,82 166,54 S199,56 221,48 S252,60 277,39 S310,45 331,24 S365,33 390,10"
+                          d={`M ${dashboardChartPoints.replace(/,/g, " ")}`}
                           fill="none"
                           stroke="#8f70ce"
                           strokeWidth="2.5"
                           vectorEffect="non-scaling-stroke"
                         />
-                        <circle
-                          cx="277"
-                          cy="39"
-                          r="4"
-                          fill="#fff"
-                          stroke="#8f70ce"
-                          strokeWidth="2"
-                          vectorEffect="non-scaling-stroke"
-                        />
+                        {dashboardChartPoints.split(" ").map((point, index) => {
+                          const [cx, cy] = point.split(",");
+                          return (
+                            <circle
+                              key={dashboardDateKeys[index]}
+                              cx={cx}
+                              cy={cy}
+                              r="3"
+                              fill="#fff"
+                              stroke="#8f70ce"
+                              strokeWidth="2"
+                              vectorEffect="non-scaling-stroke"
+                            />
+                          );
+                        })}
                       </svg>
                       <div className="chart-x-labels">
-                        <span>Mon</span>
-                        <span>Tue</span>
-                        <span>Wed</span>
-                        <span>Thu</span>
-                        <span>Fri</span>
-                        <span>Sat</span>
-                        <span>Sun</span>
+                        {dashboardDailyValues.map((day) => (
+                          <span key={day.date}>
+                            {new Intl.DateTimeFormat("en-US", {
+                              weekday: "short",
+                            }).format(new Date(`${day.date}T00:00:00`))}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   </div>
                   <div className="chart-legend">
                     <span />
-                    <i>Revenue</i>
+                    <i>Booked value</i>
                     <small>Daily total</small>
                   </div>
                 </article>
@@ -727,244 +959,341 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 <article className="popular-card panel">
                   <div className="panel-header">
                     <div>
-                      <h2>Popular services</h2>
-                      <p>Your top performers this month</p>
+                      <h2>Popular treatments</h2>
+                      <p>Ranked by bookings in the past seven days</p>
                     </div>
-                    <button
-                      className="plain-icon-button"
-                      aria-label="More service options"
-                      onClick={() => notify("Service options")}
-                    >
-                      <Icon name="more" />
-                    </button>
                   </div>
                   <div className="service-list">
-                    <div className="service-row">
-                      <span className="service-symbol service-purple">
-                        <Icon name="scissors" />
-                      </span>
-                      <span className="service-details">
-                        <strong>Signature haircut</strong>
-                        <small>Hair · 45 min</small>
-                      </span>
-                      <span className="service-bookings">
-                        86 <small>bookings</small>
-                      </span>
-                      <span className="service-revenue">₹7,43,300</span>
-                      <span className="service-trend">↗ 18%</span>
-                    </div>
-                    <div className="service-row">
-                      <span className="service-symbol service-peach">
-                        <Icon name="sparkle" />
-                      </span>
-                      <span className="service-details">
-                        <strong>Balayage & gloss</strong>
-                        <small>Color · 2 hr 30 min</small>
-                      </span>
-                      <span className="service-bookings">
-                        42 <small>bookings</small>
-                      </span>
-                      <span className="service-revenue">₹6,04,300</span>
-                      <span className="service-trend">↗ 12%</span>
-                    </div>
-                    <div className="service-row">
-                      <span className="service-symbol service-green">
-                        <Icon name="sparkle" />
-                      </span>
-                      <span className="service-details">
-                        <strong>Gel manicure</strong>
-                        <small>Nails · 1 hr</small>
-                      </span>
-                      <span className="service-bookings">
-                        68 <small>bookings</small>
-                      </span>
-                      <span className="service-revenue">₹4,57,100</span>
-                      <span className="service-trend">↗ 8%</span>
-                    </div>
-                  </div>
-                </article>
-                <article className="team-card panel">
-                  <div className="panel-header">
-                    <div>
-                      <h2>
-                        Your team <span className="count-pill">4</span>
-                      </h2>
-                      <p>On the floor today</p>
-                    </div>
-                    <button
-                      className="text-button"
-                      onClick={() => selectPage("Team")}
-                    >
-                      View team <Icon name="arrow" size={14} />
-                    </button>
-                  </div>
-                  <div className="team-list">
-                    <div className="team-row">
-                      <span className="team-photo stylist-one">IS</span>
-                      <span className="team-details">
-                        <strong>Isabella Santos</strong>
-                        <small>Senior stylist</small>
-                      </span>
-                      <span className="online-dot" />
-                      <span className="team-clients">6 clients</span>
-                    </div>
-                    <div className="team-row">
-                      <span className="team-photo stylist-two">OK</span>
-                      <span className="team-details">
-                        <strong>Olivia Kim</strong>
-                        <small>Color specialist</small>
-                      </span>
-                      <span className="online-dot" />
-                      <span className="team-clients">4 clients</span>
-                    </div>
-                    <div className="team-row">
-                      <span className="team-photo stylist-three">NB</span>
-                      <span className="team-details">
-                        <strong>Noah Bennett</strong>
-                        <small>Nail artist</small>
-                      </span>
-                      <span className="online-dot away" />
-                      <span className="team-clients">3 clients</span>
-                    </div>
+                    {dashboardPopularTreatments.length ? (
+                      dashboardPopularTreatments.map((treatment, index) => (
+                        <div className="service-row" key={treatment.name}>
+                          <span
+                            className={`service-symbol ${
+                              ["service-purple", "service-peach", "service-green"][index]
+                            }`}
+                          >
+                            <Icon name={index === 0 ? "scissors" : "sparkle"} />
+                          </span>
+                          <span className="service-details">
+                            <strong>{treatment.name}</strong>
+                            <small>Past seven days</small>
+                          </span>
+                          <span className="service-bookings">
+                            {treatment.bookings} <small>bookings</small>
+                          </span>
+                          <span className="service-revenue">
+                            {formatPrice(treatment.bookedValue)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="dashboard-empty">
+                        No treatment bookings were recorded in the past seven days.
+                      </p>
+                    )}
                   </div>
                 </article>
               </section>
             </>
+            )
+          ) : page === "Services" || page === "Treatments" ? (
+            <AdminServices
+              notify={notify}
+              view={page === "Treatments" ? "subServices" : "services"}
+            />
           ) : (
             <section className="section-page panel">
               <div className="panel-header">
                 <div>
-                  <h2>
+                  <h2 className="admin-section-heading">
+                    <Icon
+                      name={page === "Appointments" ? "calendar" : "users"}
+                      size={16}
+                    />
                     {page}{" "}
                     <span className="count-pill">
                       {page === "Appointments"
                         ? appointments.length
                         : page === "Clients"
                           ? 248
-                          : page === "Services"
-                            ? 12
-                            : page === "Team"
-                              ? 4
-                              : 6}
+                          : 6}
                     </span>
                   </h2>
                   <p>Manage your studio {page.toLowerCase()} in one place.</p>
                 </div>
-                <button
-                  className="primary-button"
-                  onClick={() =>
-                    page === "Appointments"
-                      ? setBookingOpen(true)
-                      : notify(
-                          `Add ${page.slice(0, -1).toLowerCase()} flow opened`,
-                        )
-                  }
-                >
-                  <Icon name="plus" size={16} /> Add{" "}
-                  {page === "Appointments"
-                    ? "appointment"
-                    : page.slice(0, -1).toLowerCase()}
-                </button>
+                {page !== "Appointments" && (
+                  <button
+                    className="primary-button"
+                    onClick={() =>
+                      notify(`Add ${page.slice(0, -1).toLowerCase()} flow opened`)
+                    }
+                  >
+                    <Icon name="plus" size={16} /> Add{" "}
+                    {page.slice(0, -1).toLowerCase()}
+                  </button>
+                )}
               </div>
               {page === "Appointments" ? (
-                <div className="appointment-list expanded-list">
-                  {filteredAppointments.map((item) => (
-                    <div className="appointment-row" key={item.id}>
-                      <div className="appointment-time">
-                        <strong>{item.time.split(" ")[0]}</strong>
-                        <small>{item.time.split(" ")[1]}</small>
-                      </div>
-                      <span className={`client-avatar ${item.color}`}>
-                        {item.initials}
-                      </span>
-                      <div className="appointment-info">
-                        <strong>{item.name}</strong>
-                        <span>
-                          {item.service} <i>·</i> {item.stylist}
-                        </span>
-                      </div>
-                      <span
-                        className={`status-pill ${item.status.toLowerCase().replace(" ", "-")}`}
-                      >
-                        {item.status}
-                      </span>
-                      <button
-                        className="row-more"
-                        onClick={() => toggleCheckin(item.id)}
-                        aria-label="Toggle check in"
-                      >
-                        <Icon name="check" />
-                      </button>
+                appointmentsLoading ? (
+                  <BrandLoader
+                    message="Loading appointments"
+                    detail="Fetching the studio schedule for this date."
+                  />
+                ) : appointmentsError ? (
+                  <div className="appointments-error" role="alert">
+                    <span className="appointments-error-mark" aria-hidden="true">
+                      <Icon name="calendar" size={23} />
+                      <i>!</i>
+                    </span>
+                    <span className="appointments-error-kicker">
+                      Schedule connection
+                    </span>
+                    <strong>Appointments aren’t available right now</strong>
+                    <span className="appointments-error-description">
+                      We couldn’t reach your appointment service. Check your
+                      connection, then give it another try.
+                    </span>
+                    <button
+                      type="button"
+                      className="appointments-retry-button"
+                      onClick={() =>
+                        setAppointmentsReload((current) => current + 1)
+                      }
+                    >
+                      <span aria-hidden="true">↻</span> Try again
+                    </button>
+                    <small className="appointments-error-reference">
+                      Your schedule hasn’t been changed.
+                    </small>
+                  </div>
+                ) : filteredAppointments.length ? (
+                  <div className="appointment-list expanded-list">
+                    <div className="admin-appointment-table-scroll">
+                      <table className="admin-appointment-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Time</th>
+                            <th scope="col">Client</th>
+                            <th scope="col">Services</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                    {visibleAppointments.map((item, index) => {
+                      const customerName = appointmentName(item);
+                      const totalAmount = appointmentTotal(item);
+                      const initials = customerName
+                        .split(/\s+/)
+                        .map((part) => part[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase();
+                      const status = normalizeAppointmentStatus(item.status);
+                      const statusLabel = (status ?? "UNKNOWN")
+                        .toLowerCase()
+                        .replaceAll("_", " ")
+                        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+                      const timeParts = appointmentTime(item).split(":");
+                      const hour = Number(timeParts[0]);
+                      const displayTime = Number.isNaN(hour)
+                        ? appointmentTime(item)
+                        : `${hour % 12 || 12}:${timeParts[1]?.slice(0, 2) ?? "00"} ${hour >= 12 ? "PM" : "AM"}`;
+                      return (
+                        <React.Fragment key={item.id}>
+                          <tr className="admin-appointment-table-row">
+                            <td>
+                              <span className="admin-appointment-table-time">
+                                <strong>{displayTime.split(" ")[0]}</strong>
+                                <small>{displayTime.split(" ")[1]}</small>
+                              </span>
+                            </td>
+                            <td>
+                              <span className="admin-appointment-table-client">
+                                <span
+                                  className={`client-avatar ${["lavender", "peach", "sage", "blue"][((currentAppointmentPage - 1) * appointmentPageSize + index) % 4]}`}
+                                >
+                                  {initials}
+                                </span>
+                                <span>
+                                  <strong>{customerName}</strong>
+                                  {(item.customer?.phone || item.phone) && (
+                                    <small>
+                                      {item.customer?.phone ?? item.phone}
+                                    </small>
+                                  )}
+                                </span>
+                              </span>
+                            </td>
+                            <td className="admin-appointment-table-services">
+                              {appointmentServices(item)}
+                            </td>
+                            <td className="admin-appointment-table-total">
+                              {totalAmount !== undefined
+                                ? formatPrice(totalAmount)
+                                : "—"}
+                            </td>
+                            <td>
+                              <select
+                                className={`admin-appointment-status-select ${(status ?? "unknown").toLowerCase().replaceAll("_", "-")}`}
+                                aria-label={`Change status for ${customerName}`}
+                                value={status ?? ""}
+                                disabled={
+                                  status === undefined ||
+                                  appointmentStatusUpdatingId === item.id
+                                }
+                                onChange={(event) => {
+                                  const nextStatus = normalizeAppointmentStatus(
+                                    event.target.value,
+                                  );
+                                  if (nextStatus) {
+                                    void updateAppointmentStatus(
+                                      item,
+                                      nextStatus,
+                                    );
+                                  }
+                                }}
+                              >
+                                {status === undefined && (
+                                  <option value="" disabled>
+                                    {statusLabel}
+                                  </option>
+                                )}
+                                {APPOINTMENT_STATUSES.map(
+                                  (appointmentStatus) =>
+                                    appointmentStatus !== "IN_PROGRESS" &&
+                                    appointmentStatus !== "NO_SHOW" && (
+                                      <option
+                                        key={appointmentStatus}
+                                        value={appointmentStatus}
+                                      >
+                                        {appointmentStatus
+                                          .toLowerCase()
+                                          .replaceAll("_", " ")
+                                          .replace(/\b\w/g, (letter) =>
+                                            letter.toUpperCase(),
+                                          )}
+                                      </option>
+                                    ),
+                                )}
+                              </select>
+                            </td>
+                            <td>
+                              <button
+                                className="admin-appointment-details-button"
+                                type="button"
+                                aria-label={`View booking details for ${customerName}`}
+                                title="View booking details"
+                                onClick={() => void openAppointmentDetails(item)}
+                              >
+                                <Icon name="eye" size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        </React.Fragment>
+                      );
+                    })}
+                        </tbody>
+                      </table>
                     </div>
-                  ))}
-                </div>
+                    <AdminPagination
+                      currentPage={currentAppointmentPage}
+                      pageSize={appointmentPageSize}
+                      totalItems={filteredAppointments.length}
+                      itemLabel="appointments"
+                      onPageChange={setAppointmentPage}
+                    />
+                  </div>
+                ) : (
+                  <div className="appointments-empty">
+                    <span className="appointments-empty-art" aria-hidden="true">
+                      <Icon name="calendar" size={27} />
+                      <i />
+                    </span>
+                    <span className="appointments-empty-date">
+                      {new Intl.DateTimeFormat("en-US", {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      }).format(new Date(`${selectedDate}T00:00:00`))}
+                    </span>
+                    <strong>Your schedule is clear</strong>
+                    <span className="appointments-empty-description">
+                      No appointments are booked for this day. Your studio has
+                      room for something lovely.
+                    </span>
+                  </div>
+                )
               ) : (
                 <div className="placeholder-grid">
-                  {(page === "Clients"
-                    ? [
+                  {page === "Clients" ? (
+                    <div className="admin-client-table-scroll">
+                      <table className="admin-client-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Client</th>
+                            <th scope="col">Recent activity</th>
+                            <th scope="col">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
                         ["Maya Chen", "Last visit · Jun 16", "MC"],
                         ["Sophie Laurent", "Last visit · Jun 12", "SL"],
                         ["Amara Johnson", "Last visit · Jun 11", "AJ"],
                         ["Charlotte Reed", "Last visit · Jun 10", "CR"],
                         ["Lily Parker", "Last visit · Jun 8", "LP"],
                         ["Elena Rivera", "Last visit · Jun 7", "ER"],
-                      ]
-                    : page === "Team"
-                      ? [
-                          ["Isabella Santos", "Senior stylist", "IS"],
-                          ["Olivia Kim", "Color specialist", "OK"],
-                          ["Noah Bennett", "Nail artist", "NB"],
-                          ["Ava Patel", "Esthetician", "AP"],
-                        ]
-                      : page === "Services"
-                        ? [
-                            ["Signature haircut", "Hair · 45 min", "₹8,600"],
-                            [
-                              "Balayage & gloss",
-                              "Color · 2 hr 30 min",
-                              "₹14,400",
-                            ],
-                            ["Gel manicure", "Nails · 1 hr", "₹6,700"],
-                            [
-                              "Deep conditioning",
-                              "Treatment · 45 min",
-                              "₹8,200",
-                            ],
-                            ["Blowout", "Styling · 45 min", "₹6,200"],
-                            ["Brow shaping", "Beauty · 30 min", "₹3,800"],
-                          ]
-                        : [
-                            ["Weekly revenue", "₹12,17,700", "↗"],
-                            ["Appointments", "164 this week", "↗"],
-                            ["New clients", "18 this month", "↗"],
-                            ["Retention", "84.6%", "↗"],
-                            ["Popular service", "Signature haircut", "86"],
-                            ["Team utilization", "78%", "↗"],
-                          ]
-                  ).map((entry, index) => (
+                          ].map((entry, index) => (
+                            <tr key={entry[0]}>
+                              <td>
+                                <span className="admin-appointment-table-client">
+                                  <span
+                                    className={`client-avatar ${["lavender", "peach", "sage", "blue"][index % 4]}`}
+                                  >
+                                    {entry[2]}
+                                  </span>
+                                  <strong>{entry[0]}</strong>
+                                </span>
+                              </td>
+                              <td>{entry[1]}</td>
+                              <td>
+                                <span className="admin-client-status">
+                                  Active
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    [
+                          ["Studio profile", "Business details and contact", "SP"],
+                          ["Booking preferences", "Appointment settings", "BP"],
+                          ["Opening hours", "Set your availability", "OH"],
+                          ["Notifications", "Client and booking updates", "NT"],
+                          ["Account security", "Manage admin access", "AS"],
+                          ["Payments", "Payment preferences", "PY"],
+                    ].map((entry, index) => (
                     <div className="placeholder-item" key={index}>
                       <span
                         className={`client-avatar ${["lavender", "peach", "sage", "blue"][index % 4]}`}
                       >
-                        {page === "Services" ? (
-                          <Icon name="scissors" size={18} />
-                        ) : (
-                          entry[2]
-                        )}
+                        {entry[2]}
                       </span>
                       <div>
                         <strong>{entry[0]}</strong>
                         <small>{entry[1]}</small>
                       </div>
                       <span className="placeholder-end">
-                        {page === "Services" ? (
-                          entry[2]
-                        ) : (
-                          <Icon name="chevron" size={16} />
-                        )}
+                        <Icon name="chevron" size={16} />
                       </span>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               )}
             </section>
@@ -977,98 +1306,467 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       </main>
       {bookingOpen && (
         <div
-          className="modal-overlay"
+          className="admin-booking-backdrop"
           role="presentation"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setBookingOpen(false);
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              !bookingSubmitting
+            ) {
+              setBookingOpen(false);
+            }
           }}
         >
-          <form className="booking-modal" onSubmit={createBooking}>
-            <div className="modal-top">
-              <div className="modal-icon">
-                <Icon name="calendar" size={20} />
+          <form
+            className="admin-booking-modal"
+            onSubmit={submitAdminBooking}
+            aria-busy={bookingSubmitting}
+          >
+            <div className="admin-booking-heading">
+              <div>
+                <span className="appointments-error-kicker">
+                  STUDIO SCHEDULING
+                </span>
+                <h2>New appointment</h2>
+                <p>Choose treatments, a preferred time, and client details.</p>
               </div>
               <button
                 type="button"
-                className="plain-icon-button"
+                aria-label="Close appointment form"
+                disabled={bookingSubmitting}
                 onClick={() => setBookingOpen(false)}
-                aria-label="Close"
               >
-                <Icon name="close" />
+                ×
               </button>
             </div>
-            <h2>Book an appointment</h2>
-            <p>Add a new visit to your studio schedule.</p>
-            <label>
-              Client name
-              <input
-                required
-                placeholder="e.g. Taylor Morgan"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </label>
-            <label>
-              Service
-              <select
-                value={form.service}
-                onChange={(e) => setForm({ ...form, service: e.target.value })}
-              >
-                <option>Signature haircut</option>
-                <option>Balayage & gloss</option>
-                <option>Gel manicure</option>
-                <option>Deep conditioning</option>
-                <option>Blowout</option>
-              </select>
-            </label>
-            <div className="form-split">
+
+            <div className="admin-booking-fields">
+              <label>
+                Client name
+                <input
+                  required
+                  value={bookingName}
+                  onChange={(event) => setBookingName(event.target.value)}
+                  placeholder="First and last name"
+                />
+              </label>
+              <label>
+                Email address
+                <input
+                  type="email"
+                  required
+                  value={bookingEmail}
+                  onChange={(event) => setBookingEmail(event.target.value)}
+                  placeholder="client@example.com"
+                />
+              </label>
+              <label>
+                Phone number
+                <input
+                  type="tel"
+                  required
+                  value={bookingPhone}
+                  onChange={(event) => setBookingPhone(event.target.value)}
+                  placeholder="+91 98765 43210"
+                />
+              </label>
               <label>
                 Date
-                <select defaultValue="Today, June 18">
-                  <option>Today, June 18</option>
-                  <option>Tomorrow, June 19</option>
-                </select>
+                <input
+                  type="date"
+                  required
+                  min={localDateKey(new Date())}
+                  value={bookingDate}
+                  onChange={(event) => {
+                    setBookingDate(event.target.value);
+                    setBookingTime("");
+                    setBookingAppointments([]);
+                    setBookingAvailabilityError("");
+                    setBookingAvailabilityLoading(true);
+                  }}
+                />
               </label>
               <label>
-                Time
+                Appointment time
                 <select
-                  value={form.time}
-                  onChange={(e) => setForm({ ...form, time: e.target.value })}
+                  required
+                  value={bookingTime}
+                  disabled={
+                    bookingAvailabilityLoading ||
+                    Boolean(bookingAvailabilityError)
+                  }
+                  onChange={(event) => setBookingTime(event.target.value)}
                 >
-                  <option>12:00 PM</option>
-                  <option>1:00 PM</option>
-                  <option>2:00 PM</option>
-                  <option>3:00 PM</option>
-                  <option>4:00 PM</option>
-                  <option>5:00 PM</option>
+                  <option value="">
+                    {bookingAvailabilityLoading
+                      ? "Checking available times…"
+                      : "Select an hourly slot"}
+                  </option>
+                  {APPOINTMENT_TIME_SLOTS.map((slotStart) => {
+                    const value = `${String(Math.floor(slotStart / 60)).padStart(2, "0")}:00`;
+                    const unavailable = isBookingSlotUnavailable(slotStart);
+                    return (
+                      <option
+                        key={value}
+                        value={value}
+                        disabled={unavailable}
+                      >
+                        {formatAppointmentTime(slotStart)}
+                        {unavailable
+                          ? slotStart + bookingDurationMinutes >
+                            APPOINTMENT_CLOSING_MINUTES
+                            ? " · Ends after closing"
+                            : " · Booked"
+                          : " · Available"}
+                      </option>
+                    );
+                  })}
                 </select>
+                <small className="admin-booking-hours">
+                  Start times are hourly from 9:00 AM to 9:00 PM; appointments
+                  must end by 10:00 PM.
+                </small>
               </label>
             </div>
-            <label>
-              Stylist
-              <select
-                value={form.stylist}
-                onChange={(e) => setForm({ ...form, stylist: e.target.value })}
-              >
-                <option>Isabella</option>
-                <option>Olivia</option>
-                <option>Noah</option>
-                <option>Ava</option>
-              </select>
+            {bookingAvailabilityError && (
+              <div>
+                <p className="admin-booking-inline-error" role="alert">
+                  Could not check availability: {bookingAvailabilityError}
+                </p>
+                <button
+                  type="button"
+                  className="appointments-retry-button"
+                  onClick={() => {
+                    setBookingAvailabilityLoading(true);
+                    setBookingAvailabilityError("");
+                    setAppointmentsReload((current) => current + 1);
+                  }}
+                >
+                  Try checking again
+                </button>
+              </div>
+            )}
+
+            <fieldset className="admin-booking-treatments">
+              <legend>Treatments <span>Select one or more</span></legend>
+              {serviceCatalogueLoading ? (
+                <BrandLoader
+                  message="Loading treatments"
+                  variant="compact"
+                />
+              ) : serviceCatalogueError ? (
+                <p className="admin-booking-inline-error" role="alert">
+                  Could not load treatments: {serviceCatalogueError}
+                </p>
+              ) : (
+                <details className="admin-booking-treatment-select">
+                  <summary aria-label="Choose one or more treatments">
+                    <span>
+                      {selectedBookingTreatments.length
+                        ? selectedBookingTreatments.join(", ")
+                        : "Select treatments"}
+                    </span>
+                    <span className="admin-booking-select-indicator">
+                      {bookingTreatmentIds.length
+                        ? `${bookingTreatmentIds.length} selected`
+                        : "Multiple"}
+                      <span aria-hidden="true">⌄</span>
+                    </span>
+                  </summary>
+                  <div className="admin-booking-treatment-list">
+                    {serviceCatalogue.length ? (
+                      serviceCatalogue.map((service) => (
+                        <section
+                          className="admin-booking-service-group"
+                          key={service.id}
+                        >
+                          <h3>
+                            {service.name}
+                            {!service.active && (
+                              <span className="admin-booking-unavailable">
+                                Service inactive
+                              </span>
+                            )}
+                          </h3>
+                          {service.subServices.map((treatment) => {
+                            const unavailable =
+                              !service.active || !treatment.active;
+                            return (
+                              <label
+                                className={`admin-booking-treatment${unavailable ? " is-unavailable" : ""}`}
+                                key={treatment.id}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={bookingTreatmentIds.includes(
+                                    treatment.id,
+                                  )}
+                                  disabled={unavailable}
+                                  onChange={() =>
+                                    toggleBookingTreatment(treatment)
+                                  }
+                                />
+                                <span>
+                                  <strong>{treatment.name}</strong>
+                                  {!treatment.active && (
+                                    <small>Inactive treatment</small>
+                                  )}
+                                </span>
+                                <span className="admin-booking-treatment-meta">
+                                  {treatment.durationMinutes} min ·{" "}
+                                  {treatment.offerPrice !== null && (
+                                    <del>
+                                      {formatPrice(treatment.price)}
+                                    </del>
+                                  )}{" "}
+                                  <strong>
+                                    {formatPrice(
+                                      treatment.offerPrice ?? treatment.price,
+                                    )}
+                                  </strong>
+                                </span>
+                              </label>
+                            );
+                          })}
+                          {!service.subServices.length && (
+                            <p className="admin-booking-service-empty">
+                              No treatments have been added to this service.
+                            </p>
+                          )}
+                        </section>
+                      ))
+                    ) : (
+                      <p>No services were returned by the services API.</p>
+                    )}
+                  </div>
+                  {!serviceCatalogue.some(
+                    (service) =>
+                      service.active &&
+                      service.subServices.some((treatment) => treatment.active),
+                  ) && (
+                    <p className="admin-booking-availability-note">
+                      There are currently no active treatments to book.
+                      Inactive items are shown but cannot be selected. Activate
+                      or add treatments in Services to make them available.
+                    </p>
+                  )}
+                </details>
+              )}
+              <div className="admin-booking-total" aria-live="polite">
+                <span>
+                  Estimated total
+                  <small>
+                    {bookingTreatmentIds.length
+                      ? `${bookingTreatmentIds.length} treatment${bookingTreatmentIds.length === 1 ? "" : "s"} selected`
+                      : "Select treatments to calculate"}
+                  </small>
+                </span>
+                <strong>{formatPrice(bookingTotal)}</strong>
+              </div>
+            </fieldset>
+
+            <label className="admin-booking-notes">
+              Notes <span>Optional</span>
+              <textarea
+                rows={3}
+                value={bookingNotes}
+                onChange={(event) => setBookingNotes(event.target.value)}
+                placeholder="Add a note for the appointment"
+              />
             </label>
-            <div className="modal-actions">
+            {bookingError && (
+              <p className="admin-booking-inline-error" role="alert">
+                {bookingError}
+              </p>
+            )}
+            <div className="admin-booking-actions">
               <button
+                className="admin-booking-cancel"
                 type="button"
-                className="secondary-button"
+                disabled={bookingSubmitting}
                 onClick={() => setBookingOpen(false)}
               >
                 Cancel
               </button>
-              <button type="submit" className="primary-button">
-                <Icon name="check" size={16} /> Confirm booking
+              <button
+                className="primary-button"
+                type="submit"
+                disabled={
+                  bookingSubmitting ||
+                  serviceCatalogueLoading ||
+                  bookingAvailabilityLoading ||
+                  Boolean(bookingAvailabilityError) ||
+                  Boolean(serviceCatalogueError)
+                }
+              >
+                {bookingSubmitting ? "Scheduling…" : "Schedule appointment"}
               </button>
             </div>
           </form>
+        </div>
+      )}
+      {detailsAppointment && (
+        <div
+          className="admin-appointment-details-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setDetailsAppointment(null);
+              setDetailsError("");
+            }
+          }}
+        >
+          <section
+            className="admin-appointment-details-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="appointment-details-title"
+          >
+            <header className="admin-appointment-details-heading">
+              <div>
+                <span className="admin-appointment-details-kicker">
+                  BOOKING DETAILS · #{detailsAppointment.id}
+                </span>
+                <h2 id="appointment-details-title">
+                  {appointmentName(detailsAppointment)}
+                </h2>
+                <p>
+                  {new Intl.DateTimeFormat("en-IN", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  }).format(
+                    new Date(`${detailsAppointment.appointmentDate}T00:00:00`),
+                  )}
+                  {" · "}
+                  {detailsAppointment.startTime ??
+                    detailsAppointment.preferredStartTime ??
+                    "Time not set"}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close booking details"
+                onClick={() => {
+                  setDetailsAppointment(null);
+                  setDetailsError("");
+                }}
+              >
+                <Icon name="close" size={17} />
+              </button>
+            </header>
+            {detailsError && (
+              <p className="admin-appointment-details-error" role="alert">
+                Could not refresh the booking details: {detailsError}
+              </p>
+            )}
+            {detailsLoading ? (
+              <BrandLoader
+                variant="compact"
+                message="Loading booking details"
+              />
+            ) : (
+              <>
+                <dl className="admin-appointment-details-grid">
+                  <div>
+                    <dt>Client</dt>
+                    <dd>{appointmentName(detailsAppointment)}</dd>
+                  </div>
+                  <div>
+                    <dt>Email</dt>
+                    <dd>
+                      {detailsAppointment.customer?.email ??
+                        detailsAppointment.email ??
+                        "Not provided"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Phone</dt>
+                    <dd>
+                      {detailsAppointment.customer?.phone ??
+                        detailsAppointment.phone ??
+                        "Not provided"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Appointment status</dt>
+                    <dd>
+                      {(normalizeAppointmentStatus(detailsAppointment.status) ??
+                        "UNKNOWN")
+                        .toLowerCase()
+                        .replaceAll("_", " ")
+                        .replace(/\b\w/g, (letter) => letter.toUpperCase())}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Duration</dt>
+                    <dd>
+                      {detailsAppointment.totalDurationMinutes
+                        ? `${detailsAppointment.totalDurationMinutes} min`
+                        : "Not provided"}
+                    </dd>
+                  </div>
+                </dl>
+                <section className="admin-appointment-details-services">
+                  <h3>
+                    <Icon name="scissors" size={15} />
+                    Booked treatments
+                  </h3>
+                  {detailsAppointment.items?.length ? (
+                    <ul>
+                      {detailsAppointment.items.map((service) => (
+                        <li key={service.id}>
+                          <span>
+                            <strong>{service.subServiceName}</strong>
+                            <small>
+                              {service.serviceName}
+                              {service.durationMinutes > 0
+                                ? ` · ${service.durationMinutes} min`
+                                : ""}
+                            </small>
+                          </span>
+                          <strong>{formatPrice(service.totalPrice)}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>{appointmentServices(detailsAppointment)}</p>
+                  )}
+                </section>
+                <dl className="admin-appointment-details-totals">
+                  <div>
+                    <dt>Subtotal</dt>
+                    <dd>
+                      {detailsAppointment.subtotal !== undefined
+                        ? formatPrice(detailsAppointment.subtotal)
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Discount</dt>
+                    <dd>
+                      {detailsAppointment.discount !== undefined
+                        ? formatPrice(detailsAppointment.discount)
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div className="is-grand-total">
+                    <dt>Estimated total</dt>
+                    <dd>
+                      {formatPrice(appointmentBookedValue(detailsAppointment))}
+                    </dd>
+                  </div>
+                </dl>
+                {detailsAppointment.notes && (
+                  <div className="admin-appointment-details-notes">
+                    <strong>Booking notes</strong>
+                    <p>{detailsAppointment.notes}</p>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
         </div>
       )}
       {toast && (

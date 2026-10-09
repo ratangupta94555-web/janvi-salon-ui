@@ -2,6 +2,7 @@
   "name": "salon-system",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:8080",
   "dependencies": {
     "@mantine/carousel": "^9.6.3",
     "@mantine/charts": "^9.6.3",

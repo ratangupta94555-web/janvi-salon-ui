@@ -10,6 +10,7 @@
 .app-shell{width:100%;max-width:100%;overflow-x:clip}
 .sidebar{height:100vh;height:100dvh;overflow-y:auto;overscroll-behavior:contain}
 .main-content,.page-wrap,.panel,.feature-row,.bottom-row,.stats-grid{min-width:0}
+.bottom-row{grid-template-columns:minmax(0,1fr)}
 .appointment-row,.appointment-info,.service-details,.team-details{min-width:0}
 .notice-popover{max-width:calc(100vw - 24px);overflow-wrap:anywhere}
 .modal-overlay{overflow-y:auto}
@@ -18,4 +19,12 @@
 @media(max-width:560px){.topbar,.topbar-actions,.welcome-actions{min-width:0}.breadcrumb{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.welcome-row>div:first-child{min-width:0}.welcome-subtitle{line-height:1.5}.panel-header{gap:10px}.panel-header>div{min-width:0}.date-picker{min-width:0}.date-picker select{min-width:0}.appointment-row{min-width:0}.status-pill{flex:none}.notice-popover{right:-42px}}
 @media(max-width:380px){.topbar{padding-inline:10px}.topbar-actions{gap:4px}.page-wrap{padding:18px 10px}.stat-card{padding:10px}.stat-heading{gap:5px;font-size:6.5px}.stat-icon{width:24px;height:24px}.stat-value{gap:4px;font-size:19px}.appointments-card,.performance-card,.popular-card,.team-card{padding:12px 9px}.appointment-time{width:38px}.client-avatar{width:28px;height:28px}.appointment-row{gap:5px}.status-pill{padding:4px 5px}.form-split{grid-template-columns:minmax(0,1fr)}}
 
-
+.stats-grid.stats-grid-overview{grid-template-columns:repeat(3,minmax(0,1fr))}
+.feature-row.feature-row-overview{grid-template-columns:minmax(0,1fr)}
+@media(max-width:1050px){.stats-grid.stats-grid-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.stats-grid.stats-grid-overview{grid-template-columns:minmax(0,1fr)}}
+.dashboard-feedback{padding:24px;max-width:620px;margin:12px auto;text-align:center}
+.dashboard-feedback strong{font:700 16px Manrope,sans-serif;color:#302e3b}
+.dashboard-feedback p,.dashboard-empty{color:#858494;line-height:1.6}
+.dashboard-feedback .primary-button{margin-top:6px}
+.dashboard-empty{margin:14px 0}

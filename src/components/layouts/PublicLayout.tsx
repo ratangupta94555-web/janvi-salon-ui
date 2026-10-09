@@ -247,7 +247,7 @@ export default function PublicLayout({
           <span>
             © {new Date().getFullYear()} Janvi Makeover. Made with care.
           </span>
-          <a href="/admin" onClick={go("/admin")}>
+          <a href="/login" onClick={go("/login")}>
             Studio team login
           </a>
           <span>Privacy · Terms</span>

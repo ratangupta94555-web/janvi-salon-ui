@@ -633,7 +633,7 @@
   width: 17px;
   height: 17px;
   border: 1px solid #d8cec4;
-  border-radius: 50%;
+  border-radius: 3px;
   display: grid;
   place-items: center;
   font-size: 9px;

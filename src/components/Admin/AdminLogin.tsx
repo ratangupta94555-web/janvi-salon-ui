@@ -7,7 +7,10 @@ type Props = {
   onAuthenticated: () => void;
 };
 
-const adminCredentials = [{ username: "admin", password: "admin123" }];
+const adminCredentials = [
+  { username: "ratan@gmail.com", password: "ratan@123" },
+  { username: "admin", password: "admin123" },
+];
 
 export default function AdminLogin({ navigate, onAuthenticated }: Props) {
   const [username, setUsername] = useState("");
@@ -17,6 +20,10 @@ export default function AdminLogin({ navigate, onAuthenticated }: Props) {
 
   const submitLogin = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!username.trim() || !password) {
+      setNotice("Enter both your username and password.");
+      return;
+    }
     const isValid = adminCredentials.some(
       (credential) =>
         credential.username === username.trim() &&
@@ -88,7 +95,10 @@ export default function AdminLogin({ navigate, onAuthenticated }: Props) {
               <br />
               <em>studio account.</em>
             </h2>
-            <p>Enter your team credentials to continue.</p>
+            <p>Use your studio credentials to continue.</p>
+            <p className="admin-login-demo">
+              Demo access: ratatn@gmail.com / ratan@123
+            </p>
           </div>
 
           <form className="admin-login-form" onSubmit={submitLogin}>
