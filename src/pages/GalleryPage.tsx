@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./CustomerPages.css";
 import "./GalleryPortfolio.css";
 import PublicEditorialHero from "../components/common/PublicEditorialHero";
@@ -122,9 +122,55 @@ const videoHighlights = [
     src: "/videos/janvi-salon-05.mp4",
   },
 ];
+const GALLERY_PAGE_SIZE = 9;
+
 export default function GalleryPage({ navigate }: Props) {
   const [filter, setFilter] = useState("All");
   const visible = photos.filter(([cat]) => filter === "All" || cat === filter);
+  const [visibleCount, setVisibleCount] = useState(GALLERY_PAGE_SIZE);
+  const [selectedPhoto, setSelectedPhoto] = useState<[string, string] | null>(
+    null,
+  );
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const visiblePhotos = visible.slice(0, visibleCount);
+
+  useEffect(() => {
+    if (visibleCount >= visible.length) return;
+    const loadMoreElement = loadMoreRef.current;
+    if (!loadMoreElement || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisibleCount((count) =>
+            Math.min(count + GALLERY_PAGE_SIZE, visible.length),
+          );
+        }
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(loadMoreElement);
+    return () => observer.disconnect();
+  }, [visible.length, visibleCount]);
+
+  useEffect(() => {
+    if (!selectedPhoto) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedPhoto(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.body.classList.add("gallery-modal-open");
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.classList.remove("gallery-modal-open");
+    };
+  }, [selectedPhoto]);
+
+  const selectFilter = (nextFilter: string) => {
+    setFilter(nextFilter);
+    setVisibleCount(GALLERY_PAGE_SIZE);
+  };
+
   return (
     <main className="customer-page">
       <PublicEditorialHero
@@ -206,27 +252,74 @@ export default function GalleryPage({ navigate }: Props) {
             <button
               key={f}
               className={filter === f ? "active" : ""}
-              onClick={() => setFilter(f)}
+              onClick={() => selectFilter(f)}
             >
               {f}
             </button>
           ))}
         </div>
         <div className="gallery-grid">
-          {visible.map(([cat, img], i) => (
+          {visiblePhotos.map(([cat, img], i) => (
             <figure
               key={img}
               className={`gallery-photo gallery-photo-${i % 6}`}
             >
-              <img
-                src={img}
-                alt={`${cat} portfolio at Janvi Makeover Studio`}
-              />
+              <button
+                className="gallery-photo-open"
+                type="button"
+                aria-label={`View ${cat.toLowerCase()} photo`}
+                onClick={() => setSelectedPhoto([cat, img])}
+              >
+                <img
+                  src={img}
+                  alt={`${cat} portfolio at Janvi Makeover Studio`}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
               <figcaption>{cat} · Janvi Makeover Studio</figcaption>
             </figure>
           ))}
         </div>
+        {visibleCount < visible.length && (
+          <div
+            ref={loadMoreRef}
+            className="gallery-load-more"
+            aria-live="polite"
+          >
+            Loading more photos…
+          </div>
+        )}
       </section>
+      {selectedPhoto && (
+        <div
+          className="gallery-lightbox"
+          role="presentation"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <section
+            className="gallery-lightbox-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${selectedPhoto[0]} gallery photo`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="gallery-lightbox-close"
+              type="button"
+              aria-label="Close photo"
+              onClick={() => setSelectedPhoto(null)}
+            >
+              ×
+            </button>
+            <img
+              src={selectedPhoto[1]}
+              alt={`${selectedPhoto[0]} portfolio at Janvi Makeover Studio`}
+            />
+            <p>{selectedPhoto[0]} · Janvi Makeover Studio</p>
+          </section>
+        </div>
+      )}
       <section className="gallery-cta">
         <span className="page-kicker">YOUR TURN</span>
         <h2>
