@@ -43,7 +43,7 @@ type ApiEnvelope<T> = {
   data: T;
 };
 
-const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || "http://localhost:8080").replace(
+const baseURL = (process.env.REACT_APP_API_URL || "http://localhost:8080").replace(
   /\/+$/,
   "",
 );
@@ -63,7 +63,7 @@ export async function apiRequest<T>(
   init: RequestInit = {},
   options: { allowRawArray?: boolean; allowRawObject?: boolean } = {},
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${baseURL}${path}`, {
     ...init,
     credentials: "omit",
     headers: {
