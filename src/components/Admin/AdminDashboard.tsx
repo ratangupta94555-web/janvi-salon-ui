@@ -519,14 +519,13 @@ function AdminDashboard({
       return;
     }
     const nameParts = bookingName.trim().split(/\s+/);
+    const lastName = nameParts.slice(1).join(" ") || "N/A";
     setBookingSubmitting(true);
     setBookingError("");
     try {
       await appointmentApi.create({
         firstName: nameParts[0],
-        ...(nameParts.length > 1
-          ? { lastName: nameParts.slice(1).join(" ") }
-          : {}),
+        lastName,
         email: bookingEmail.trim(),
         phone: bookingPhone.trim(),
         subServiceIds: bookingTreatmentIds,
