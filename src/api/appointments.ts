@@ -83,6 +83,23 @@ export function formatAppointmentTime(minutes: number): string {
   return `${hours % 12 || 12}:00 ${hours >= 12 ? "PM" : "AM"}`;
 }
 
+export function isAppointmentTimeSlotInPast(
+  appointmentDate: string,
+  slotStart: number,
+  now = new Date(),
+): boolean {
+  const today = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
+  return (
+    appointmentDate < today ||
+    (appointmentDate === today &&
+      slotStart <= now.getHours() * 60 + now.getMinutes())
+  );
+}
+
 export function isValidPhoneNumber(value: string): boolean {
   const phone = value.trim();
   const digitCount = phone.replace(/\D/g, "").length;

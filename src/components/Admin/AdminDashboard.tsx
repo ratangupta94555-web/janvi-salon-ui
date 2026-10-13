@@ -16,6 +16,7 @@ import {
   formatAppointmentTime,
   isValidPhoneNumber,
   isAppointmentTimeSlotUnavailable,
+  isAppointmentTimeSlotInPast,
   normalizeAppointmentStatus,
 } from "../../api/appointments";
 import {
@@ -272,6 +273,9 @@ function AdminDashboard({
   const [bookingPhone, setBookingPhone] = useState("");
   const [bookingDate, setBookingDate] = useState(selectedDate);
   const [bookingTime, setBookingTime] = useState("");
+  const [bookingAvailabilityClock, setBookingAvailabilityClock] = useState(
+    () => new Date(),
+  );
   const [bookingAppointments, setBookingAppointments] = useState<Appointment[]>(
     [],
   );
@@ -280,6 +284,15 @@ function AdminDashboard({
   const [bookingAvailabilityError, setBookingAvailabilityError] = useState("");
   const [bookingNotes, setBookingNotes] = useState("");
   const [bookingTreatmentIds, setBookingTreatmentIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (!bookingOpen) return;
+    const interval = window.setInterval(
+      () => setBookingAvailabilityClock(new Date()),
+      15_000,
+    );
+    return () => window.clearInterval(interval);
+  }, [bookingOpen]);
   const selectedBookingTreatments = serviceCatalogue.flatMap((service) =>
     service.subServices
       .filter((treatment) => bookingTreatmentIds.includes(treatment.id))
@@ -479,7 +492,12 @@ function AdminDashboard({
       slotStart,
       bookingDurationMinutes,
       bookingAppointments,
-    );
+    ) ||
+      isAppointmentTimeSlotInPast(
+        bookingDate,
+        slotStart,
+        bookingAvailabilityClock,
+      );
   };
   const submitAdminBooking = async (
     event: React.FormEvent<HTMLFormElement>,
@@ -510,10 +528,15 @@ function AdminDashboard({
       selectedStart === undefined ||
       bookingAvailabilityLoading ||
       bookingAvailabilityError ||
+      isAppointmentTimeSlotInPast(bookingDate, selectedStart) ||
       isBookingSlotUnavailable(selectedStart)
     ) {
       setBookingError(
         bookingAvailabilityError ||
+          (selectedStart !== undefined &&
+          isAppointmentTimeSlotInPast(bookingDate, selectedStart)
+            ? "That time has already passed. Please choose a future slot."
+            : "") ||
           "That time is unavailable. Please choose an available slot.",
       );
       return;
@@ -1517,7 +1540,13 @@ function AdminDashboard({
                   </option>
                   {APPOINTMENT_TIME_SLOTS.map((slotStart) => {
                     const value = `${String(Math.floor(slotStart / 60)).padStart(2, "0")}:00`;
-                    const unavailable = isBookingSlotUnavailable(slotStart);
+                    const past = isAppointmentTimeSlotInPast(
+                      bookingDate,
+                      slotStart,
+                      bookingAvailabilityClock,
+                    );
+                    const unavailable =
+                      past || isBookingSlotUnavailable(slotStart);
                     return (
                       <option
                         key={value}
@@ -1525,7 +1554,9 @@ function AdminDashboard({
                         disabled={unavailable}
                       >
                         {formatAppointmentTime(slotStart)}
-                        {unavailable
+                        {past
+                          ? " · Time passed"
+                          : unavailable
                           ? slotStart + bookingDurationMinutes >
                             APPOINTMENT_CLOSING_MINUTES
                             ? " · Ends after closing"

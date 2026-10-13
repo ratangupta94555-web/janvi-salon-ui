@@ -19,6 +19,7 @@ import {
   formatAppointmentTime,
   isValidPhoneNumber,
   isAppointmentTimeSlotUnavailable,
+  isAppointmentTimeSlotInPast,
 } from "../api/appointments";
 type Props = { navigate: (to: string) => void };
 type SelectedService = {
@@ -122,6 +123,7 @@ export default function AppointmentsPage({ navigate }: Props) {
   );
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [availabilityClock, setAvailabilityClock] = useState(() => new Date());
   const [dayAppointments, setDayAppointments] = useState<Appointment[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilityError, setAvailabilityError] = useState("");
@@ -147,6 +149,15 @@ export default function AppointmentsPage({ navigate }: Props) {
     APPOINTMENT_SLOT_MINUTES,
     selectedServices.reduce((total, service) => total + service.durationMinutes, 0),
   );
+
+  useEffect(() => {
+    if (step !== 2) return;
+    const interval = window.setInterval(
+      () => setAvailabilityClock(new Date()),
+      15_000,
+    );
+    return () => window.clearInterval(interval);
+  }, [step]);
 
   useEffect(() => {
     if (!date || step !== 2) return;
@@ -179,7 +190,7 @@ export default function AppointmentsPage({ navigate }: Props) {
       slotStart,
       selectedDurationMinutes,
       dayAppointments,
-    );
+    ) || isAppointmentTimeSlotInPast(date, slotStart, availabilityClock);
   };
 
   const formatTime = (value: string) => {
@@ -239,11 +250,20 @@ export default function AppointmentsPage({ navigate }: Props) {
       step === 2 &&
       (availabilityLoading ||
         Boolean(availabilityError) ||
+        isAppointmentTimeSlotInPast(
+          date,
+          appointmentTimeToMinutes(time) ?? -1,
+        ) ||
         isSlotUnavailable(appointmentTimeToMinutes(time) ?? -1))
     ) {
       setBookingError(
         availabilityError ||
-          "That time is unavailable. Please choose another appointment slot.",
+          (isAppointmentTimeSlotInPast(
+            date,
+            appointmentTimeToMinutes(time) ?? -1,
+          )
+            ? "That time has already passed. Please choose a future slot."
+            : "That time is unavailable. Please choose another appointment slot."),
       );
       return;
     }
@@ -268,11 +288,10 @@ export default function AppointmentsPage({ navigate }: Props) {
       setBookingError("");
       try {
         const nameParts = name.trim().split(/\s+/);
+        const lastName = nameParts.slice(1).join(" ") || "N/A";
         const created = await appointmentApi.create({
           firstName: nameParts[0],
-          ...(nameParts.length > 1
-            ? { lastName: nameParts.slice(1).join(" ") }
-            : {}),
+          lastName,
           email: email.trim(),
           phone: phone.trim(),
           subServiceIds: selectedIds,
@@ -540,7 +559,13 @@ export default function AppointmentsPage({ navigate }: Props) {
                         </option>
                         {APPOINTMENT_TIME_SLOTS.map((slotStart) => {
                           const value = `${String(Math.floor(slotStart / 60)).padStart(2, "0")}:00`;
-                          const unavailable = isSlotUnavailable(slotStart);
+                          const past = isAppointmentTimeSlotInPast(
+                            date,
+                            slotStart,
+                            availabilityClock,
+                          );
+                          const unavailable =
+                            past || isSlotUnavailable(slotStart);
                           return (
                             <option
                               key={value}
@@ -548,7 +573,9 @@ export default function AppointmentsPage({ navigate }: Props) {
                               disabled={unavailable}
                             >
                               {formatAppointmentTime(slotStart)}
-                              {unavailable
+                              {past
+                                ? " · Time passed"
+                                : unavailable
                                 ? slotStart + selectedDurationMinutes >
                                   APPOINTMENT_CLOSING_MINUTES
                                   ? " · Ends after closing"
