@@ -20,7 +20,11 @@
 @media(max-width:380px){.topbar{padding-inline:10px}.topbar-actions{gap:4px}.page-wrap{padding:18px 10px}.stat-card{padding:10px}.stat-heading{gap:5px;font-size:6.5px}.stat-icon{width:24px;height:24px}.stat-value{gap:4px;font-size:19px}.appointments-card,.performance-card,.popular-card,.team-card{padding:12px 9px}.appointment-time{width:38px}.client-avatar{width:28px;height:28px}.appointment-row{gap:5px}.status-pill{padding:4px 5px}.form-split{grid-template-columns:minmax(0,1fr)}}
 
 .stats-grid.stats-grid-overview{grid-template-columns:repeat(3,minmax(0,1fr))}
-.feature-row.feature-row-overview{grid-template-columns:minmax(0,1fr)}
+.dashboard-overview-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.55fr);align-items:start;gap:13px}
+.dashboard-overview-main{display:grid;min-width:0;gap:13px}
+.dashboard-overview-main .stats-grid-overview{margin-bottom:0}
+.feature-row.feature-row-overview{grid-template-columns:minmax(0,1fr);align-items:start}
+@media(max-width:1050px){.dashboard-overview-layout{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:1050px){.stats-grid.stats-grid-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.stats-grid.stats-grid-overview{grid-template-columns:minmax(0,1fr)}}
 .dashboard-feedback{padding:24px;max-width:620px;margin:12px auto;text-align:center}
@@ -28,3 +32,57 @@
 .dashboard-feedback p,.dashboard-empty{color:#858494;line-height:1.6}
 .dashboard-feedback .primary-button{margin-top:6px}
 .dashboard-empty{margin:14px 0}
+.upcoming-appointments-card{min-width:0;padding:18px}
+.upcoming-appointments-card .panel-header{align-items:center}
+.upcoming-appointments-card .panel-header h2{display:flex;align-items:center;gap:8px}
+.upcoming-appointments-card .panel-header h2 svg{color:#896aba}
+.upcoming-calendar-count{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:9px;background:#f2edf9;color:#795ab5;font-size:11px;font-weight:700}
+.upcoming-appointment-list{display:grid;gap:8px;max-height:352px;overflow-y:auto;margin-top:14px;padding-right:4px;scrollbar-color:#d7cce8 #f7f5fa;scrollbar-width:thin}
+.upcoming-appointment-row{display:flex;align-items:center;gap:12px;width:100%;padding:9px 10px;border:1px solid #efedf3;border-radius:12px;background:#fff;text-align:left;color:inherit;cursor:pointer}
+.upcoming-appointment-row:hover{border-color:#cfc2e9;background:#fbf9ff}
+.upcoming-appointment-date{display:grid;flex:none;place-items:center;gap:1px;min-width:48px;min-height:48px;border:1px solid #eee8f6;border-radius:10px;background:#faf8fd;color:#7555ae}
+.upcoming-appointment-date small{font-size:9px;font-weight:600;text-transform:uppercase}
+.upcoming-appointment-date strong{font-size:12px;font-weight:700}
+.upcoming-appointment-details{display:grid;min-width:0;flex:1;gap:4px}
+.upcoming-appointment-details strong{overflow:hidden;color:#302e3b;font-size:13px;text-overflow:ellipsis;white-space:nowrap}
+.upcoming-appointment-details small{overflow:hidden;color:#858494;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.upcoming-appointment-status{flex:none;color:#795ab5;font-size:10px;font-weight:700;text-transform:capitalize}
+.upcoming-appointment-status.confirmed{color:#438366}
+
+.dashboard-overview-layout{gap:18px}
+.dashboard-overview-main{gap:18px}
+.dashboard-overview-main .stats-grid-overview{gap:14px}
+.dashboard-overview-main .stat-card{height:132px;padding:17px 18px;border-color:#ece8f2;border-radius:15px;box-shadow:0 8px 24px #37255808}
+.dashboard-overview-main .stat-card:before{position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,#9b7bd1,#d8c9ed);content:""}
+.dashboard-overview-main .stat-card:nth-child(2):before{background:linear-gradient(90deg,#e3a583,#f4d8c8)}
+.dashboard-overview-main .stat-card:nth-child(3):before{background:linear-gradient(90deg,#79b99a,#c3e2d2)}
+.dashboard-overview-main .stat-heading{font-size:9px;letter-spacing:.8px}
+.dashboard-overview-main .stat-value{margin-top:8px;font-size:26px}
+.dashboard-overview-main .stat-note{margin-top:4px;font-size:10px}
+.dashboard-overview-main .performance-card{padding:21px;border-color:#ece8f2;border-radius:15px;box-shadow:0 8px 24px #37255808}
+.dashboard-overview-main .panel-header h2,.upcoming-appointments-card .panel-header h2{color:#302b3a;font:700 15px Manrope,sans-serif;letter-spacing:-.2px}
+.dashboard-overview-main .panel-header p,.upcoming-appointments-card .panel-header p{margin-top:5px;color:#8b8797;font-size:11px}
+.dashboard-overview-main .chart-total strong{color:#362e45;font:800 28px Manrope,sans-serif;letter-spacing:-.8px}
+.dashboard-overview-main .chart-caption{color:#817b8c}
+.dashboard-overview-main .chart-wrap{margin-top:14px}
+.upcoming-appointments-card{overflow:hidden;padding:0;border:1px solid #e9e2f3;border-radius:16px;background:#fff;box-shadow:0 12px 30px #37255812}
+.upcoming-appointments-card .panel-header{position:relative;min-height:104px;padding:21px 20px 18px;background:radial-gradient(ellipse at 100% 0%,#e8def6 0,transparent 52%),linear-gradient(135deg,#f8f4fc,#f1ebf8);border-bottom:1px solid #ebe4f3}
+.upcoming-appointments-card .panel-header:after{position:absolute;right:66px;bottom:-1px;width:34px;height:3px;border-radius:3px 3px 0 0;background:#9677c6;content:""}
+.upcoming-appointments-card .panel-header h2{gap:9px;font-size:16px}
+.upcoming-appointments-card .panel-header h2 svg{width:29px;height:29px;padding:6px;border-radius:9px;background:#fff;color:#896aba;box-shadow:0 3px 9px #7558a21c}
+.upcoming-appointments-card .panel-header p{margin:7px 0 0 38px;color:#82788f}
+.upcoming-calendar-count{width:36px;height:36px;border:1px solid #fff;background:#ffffffb8;color:#7153a5;font:700 13px Manrope,sans-serif;box-shadow:0 3px 10px #7558a214}
+.upcoming-appointment-list{max-height:438px;gap:0;margin:0;padding:8px 15px 14px;overscroll-behavior:contain;scrollbar-color:#cec0e2 #f8f6fa}
+.upcoming-appointment-row{position:relative;gap:11px;padding:11px 7px;border:0;border-bottom:1px solid #f0edf3;border-radius:0;background:transparent;transition:background .16s ease,transform .16s ease}
+.upcoming-appointment-row:last-child{border-bottom:0}
+.upcoming-appointment-row:hover{border-color:#f0edf3;border-radius:10px;background:#faf7fd;transform:translateX(2px)}
+.upcoming-appointment-date{min-width:51px;min-height:52px;border-color:#eee8f5;border-radius:12px;background:linear-gradient(150deg,#fbf9fe,#f4eff9);color:#7656ad}
+.upcoming-appointment-date small{font-size:9px;letter-spacing:.35px}
+.upcoming-appointment-row.today .upcoming-appointment-date{border-color:#8d6bc0;background:linear-gradient(145deg,#9878c9,#7656ae);color:#fff;box-shadow:0 5px 12px #7959b528}
+.upcoming-appointment-details{gap:5px}
+.upcoming-appointment-details strong{font-size:12px;font-weight:700}
+.upcoming-appointment-details small{font-size:10px}
+.upcoming-appointment-status{padding:5px 7px;border:1px solid #ece3f6;border-radius:20px;background:#f7f2fc;color:#7758ab;font-size:9px;letter-spacing:.1px;text-transform:none}
+.upcoming-appointment-status.confirmed{border-color:#dceee4;background:#f0f8f3;color:#438366}
+.upcoming-appointments-card .dashboard-empty{padding:18px 10px;text-align:center}
+@media(max-width:560px){.dashboard-overview-main .performance-card{padding:16px 13px}.upcoming-appointments-card .panel-header{padding:17px 15px}.upcoming-appointment-list{padding-right:10px;padding-left:10px}.upcoming-appointment-row{gap:8px;padding-inline:5px}.upcoming-appointment-status{padding:4px 6px;font-size:8px}}

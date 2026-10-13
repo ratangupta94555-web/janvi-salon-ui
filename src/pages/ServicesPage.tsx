@@ -12,14 +12,14 @@ const courses = [
   {
     title: "Beauty essentials",
     duration: "3 months",
-    price: "₹20,000",
+    price: "₹30,000",
     list: "Threading · Facial · Waxing · Manicure · Pedicure · Hair spa · Haircut · Hair colour · Hair styling · Highlights · Blow-dry · Day, party & bridal makeup · Body polishing",
     foot: "+ 7 days training",
   },
   {
     title: "Professional beauty",
     duration: "6 months",
-    price: "₹40,000",
+    price: "₹60,000",
     list: "Everything in the 3-month course, plus mehndi · hair blonding & global colour · nail art · saree draping · HD knowledge",
     foot: "Hands-on professional training",
   },

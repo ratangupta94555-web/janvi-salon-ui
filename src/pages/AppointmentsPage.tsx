@@ -592,7 +592,7 @@ export default function AppointmentsPage({ navigate }: Props) {
                     <input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="First and last name"
+                      placeholder="Your name"
                       required
                     />
                   </label>

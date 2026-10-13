@@ -188,6 +188,18 @@ function getRecentDateKeys(days: number): string[] {
   });
 }
 
+function getUpcomingDateKeys(days: number): string[] {
+  const today = new Date();
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + index,
+    );
+    return localDateKey(date);
+  });
+}
+
 function appointmentItemsTotal(appointment: Appointment): number | undefined {
   if (!appointment.items?.length) return undefined;
   const itemTotals = appointment.items.map((item) => item.totalPrice);
@@ -237,6 +249,12 @@ function AdminDashboard({
     return localDateKey(new Date());
   });
   const dashboardDateKeys = useMemo(() => getRecentDateKeys(7), []);
+  const dashboardUpcomingDateKeys = useMemo(() => getUpcomingDateKeys(7), []);
+  const dashboardFetchDateKeys = useMemo(
+    () =>
+      Array.from(new Set([...dashboardDateKeys, ...dashboardUpcomingDateKeys])),
+    [dashboardDateKeys, dashboardUpcomingDateKeys],
+  );
   const dashboardToday = dashboardDateKeys[dashboardDateKeys.length - 1];
   const [appointmentStatusUpdatingId, setAppointmentStatusUpdatingId] =
     useState<number | null>(null);
@@ -333,7 +351,7 @@ function AdminDashboard({
     setDashboardLoading(true);
     setDashboardError("");
     Promise.all(
-      dashboardDateKeys.map((date) =>
+      dashboardFetchDateKeys.map((date) =>
         appointmentApi.byDate(date, controller.signal),
       ),
     )
@@ -355,7 +373,7 @@ function AdminDashboard({
         if (!controller.signal.aborted) setDashboardLoading(false);
       });
     return () => controller.abort();
-  }, [page, dashboardDateKeys, appointmentsReload]);
+  }, [page, dashboardFetchDateKeys, appointmentsReload]);
 
   useEffect(() => {
     if (!bookingOpen || !bookingDate) return;
@@ -561,14 +579,37 @@ function AdminDashboard({
     const status = normalizeAppointmentStatus(item.status);
     return status !== "CANCELLED" && status !== "NO_SHOW";
   });
+  const dashboardRecentDateKeySet = new Set(dashboardDateKeys);
+  const dashboardRecentActiveAppointments = dashboardActiveAppointments.filter(
+    (item) => dashboardRecentDateKeySet.has(item.appointmentDate),
+  );
   const dashboardTodayAppointments = dashboardActiveAppointments.filter(
     (item) => item.appointmentDate === dashboardToday,
   );
+  const dashboardUpcomingDateKeySet = new Set(dashboardUpcomingDateKeys);
+  const dashboardUpcomingAppointments = dashboardActiveAppointments
+    .filter((item) => {
+      const status = normalizeAppointmentStatus(item.status);
+      return (
+        dashboardUpcomingDateKeySet.has(item.appointmentDate) &&
+        (status === "PENDING" || status === "CONFIRMED")
+      );
+    })
+    .sort((first, second) => {
+      const dateDifference = first.appointmentDate.localeCompare(
+        second.appointmentDate,
+      );
+      if (dateDifference) return dateDifference;
+      return (
+        (appointmentTimeToMinutes(appointmentTime(first)) ?? Infinity) -
+        (appointmentTimeToMinutes(appointmentTime(second)) ?? Infinity)
+      );
+    });
   const dashboardTodayValue = dashboardTodayAppointments.reduce(
     (total, item) => total + appointmentBookedValue(item),
     0,
   );
-  const dashboardTreatmentsThisWeek = dashboardActiveAppointments.reduce(
+  const dashboardTreatmentsThisWeek = dashboardRecentActiveAppointments.reduce(
     (total, appointment) =>
       total +
       (appointment.items ?? []).reduce(
@@ -579,7 +620,7 @@ function AdminDashboard({
   );
   const dashboardDailyValues = dashboardDateKeys.map((date) => ({
     date,
-    value: dashboardActiveAppointments
+    value: dashboardRecentActiveAppointments
       .filter((item) => item.appointmentDate === date)
       .reduce((total, item) => total + appointmentBookedValue(item), 0),
   }));
@@ -606,7 +647,7 @@ function AdminDashboard({
       string,
       { name: string; bookings: number; bookedValue: number }
     >();
-    dashboardActiveAppointments.forEach((appointment) => {
+    dashboardRecentActiveAppointments.forEach((appointment) => {
       (appointment.items ?? []).forEach((item) => {
         const name = item.subServiceName || item.serviceName || "Treatment";
         const key = `${item.subServiceId ?? name}:${name}`;
@@ -809,10 +850,12 @@ function AdminDashboard({
               </div>
             ) : (
             <>
-              <section
-                className="stats-grid stats-grid-overview"
-                aria-label="Studio statistics"
-              >
+              <div className="dashboard-overview-layout">
+                <div className="dashboard-overview-main">
+                  <section
+                    className="stats-grid stats-grid-overview"
+                    aria-label="Studio statistics"
+                  >
                 <article className="stat-card">
                   <div className="stat-heading">
                     TODAY’S BOOKED VALUE{" "}
@@ -848,8 +891,8 @@ function AdminDashboard({
                   <div className="stat-value">{dashboardTreatmentsThisWeek}</div>
                   <div className="stat-note">From appointments in the past seven days</div>
                 </article>
-              </section>
-              <section className="feature-row feature-row-overview">
+                  </section>
+                  <section className="feature-row feature-row-overview">
                 <article className="performance-card panel">
                   <div className="panel-header">
                     <div>
@@ -954,7 +997,78 @@ function AdminDashboard({
                     <small>Daily total</small>
                   </div>
                 </article>
-              </section>
+                  </section>
+                </div>
+                <article className="popular-card panel upcoming-appointments-card">
+                  <div className="panel-header">
+                    <div>
+                      <h2><Icon name="calendar" size={16} /> Upcoming appointments</h2>
+                      <p>Pending and confirmed · next 7 days</p>
+                    </div>
+                    <span className="upcoming-calendar-count">
+                      {dashboardUpcomingAppointments.length}
+                    </span>
+                  </div>
+                  <div className="upcoming-appointment-list">
+                    {dashboardUpcomingAppointments.length ? (
+                      dashboardUpcomingAppointments.map((item) => {
+                        const startTime = appointmentTimeToMinutes(
+                          appointmentTime(item),
+                        );
+                        const status = normalizeAppointmentStatus(item.status);
+                        const date = new Date(`${item.appointmentDate}T00:00:00`);
+                        const isToday = item.appointmentDate === dashboardToday;
+                        return (
+                          <button
+                            className={`upcoming-appointment-row ${isToday ? "today" : ""}`}
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDate(item.appointmentDate);
+                              selectPage("Appointments");
+                            }}
+                            aria-label={`View appointment for ${appointmentName(item)} on ${item.appointmentDate}`}
+                          >
+                            <span className="upcoming-appointment-date">
+                              <small>
+                                {isToday
+                                  ? "Today"
+                                  : new Intl.DateTimeFormat("en-US", {
+                                      weekday: "short",
+                                    }).format(date)}
+                              </small>
+                              <strong>
+                                {new Intl.DateTimeFormat("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                }).format(date)}
+                              </strong>
+                            </span>
+                            <span className="upcoming-appointment-details">
+                              <strong>{appointmentName(item)}</strong>
+                              <small>
+                                {startTime !== undefined
+                                  ? formatAppointmentTime(startTime)
+                                  : appointmentTime(item)}{" "}
+                                · {appointmentServices(item)}
+                              </small>
+                            </span>
+                            <span
+                              className={`upcoming-appointment-status ${status?.toLowerCase()}`}
+                            >
+                              {status === "CONFIRMED" ? "Confirmed" : "Pending"}
+                            </span>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <p className="dashboard-empty">
+                        No upcoming appointments in the next seven days.
+                      </p>
+                    )}
+                  </div>
+                </article>
+              </div>
               <section className="bottom-row">
                 <article className="popular-card panel">
                   <div className="panel-header">
