@@ -127,6 +127,56 @@
   line-height: 1.7;
 }
 
+.booking-location-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 28px;
+}
+
+.booking-location-option {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 15px 16px;
+  border: 1px solid #eadde2;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.booking-location-option.selected {
+  border-color: #d65b92;
+  background: #fff8fb;
+  box-shadow: 0 7px 18px #df168510;
+}
+
+.booking-location-option input {
+  margin: 3px 0 0;
+  accent-color: #c42a70;
+}
+
+.booking-location-option > span {
+  display: grid;
+  gap: 5px;
+}
+
+.booking-location-option strong {
+  color: #302d3b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.booking-location-option small {
+  color: #827781;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .choice-list {
   display: grid;
   gap: 10px;

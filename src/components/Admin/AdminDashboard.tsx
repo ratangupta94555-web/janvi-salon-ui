@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import AdminServices from "./AdminServices";
+import AdminGallery from "./AdminGallery";
 import AdminPagination from "./AdminPagination";
 import "./AdminDashboard.css";
 import "./AdminAppointments.css";
@@ -12,6 +13,7 @@ import {
   appointmentApi,
   Appointment,
   AppointmentStatus,
+  SalonLocation,
   appointmentTimeToMinutes,
   formatAppointmentTime,
   isValidPhoneNumber,
@@ -42,6 +44,7 @@ type IconName =
   | "close"
   | "eye"
   | "menu"
+  | "gallery"
   | "logout";
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const common = {
@@ -135,6 +138,13 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
         <path d="M4 6h16M4 12h16M4 18h16" />
       </>
     ),
+    gallery: (
+      <>
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <circle cx="8.5" cy="9" r="1.5" />
+        <path d="m21 15-5-5L5 20" />
+      </>
+    ),
     logout: (
       <>
         <path d="M10 17l5-5-5-5M15 12H3" />
@@ -150,6 +160,7 @@ const navItems: { label: string; icon: IconName }[] = [
   { label: "Appointments", icon: "calendar" },
   { label: "Services", icon: "scissors" },
   { label: "Treatments", icon: "sparkle" },
+  { label: "Gallery", icon: "gallery" },
 ];
 
 type AdminDashboardProps = {
@@ -164,6 +175,7 @@ const adminPagePaths: Record<string, string> = {
   Clients: "/admin/clients",
   Services: "/admin/services",
   Treatments: "/admin/treatments",
+  Gallery: "/admin/gallery",
 };
 
 function pageFromPath(pathname: string): string {
@@ -271,6 +283,11 @@ function AdminDashboard({
   const [bookingName, setBookingName] = useState("");
   const [bookingEmail, setBookingEmail] = useState("");
   const [bookingPhone, setBookingPhone] = useState("");
+  const [bookingLocations, setBookingLocations] = useState<SalonLocation[]>([]);
+  const [bookingLocationsLoading, setBookingLocationsLoading] = useState(false);
+  const [bookingLocationsError, setBookingLocationsError] = useState("");
+  const [bookingLocationReload, setBookingLocationReload] = useState(0);
+  const [bookingLocationId, setBookingLocationId] = useState("");
   const [bookingDate, setBookingDate] = useState(selectedDate);
   const [bookingTime, setBookingTime] = useState("");
   const [bookingAvailabilityClock, setBookingAvailabilityClock] = useState(
@@ -284,6 +301,37 @@ function AdminDashboard({
   const [bookingAvailabilityError, setBookingAvailabilityError] = useState("");
   const [bookingNotes, setBookingNotes] = useState("");
   const [bookingTreatmentIds, setBookingTreatmentIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    setBookingLocationsLoading(true);
+    setBookingLocationsError("");
+    appointmentApi
+      .locations()
+      .then((locations) => {
+        if (active) {
+          setBookingLocations(locations);
+          setBookingLocationId((current) =>
+            locations.some((location) => location.locationId === current)
+              ? current
+              : locations[0]?.locationId ?? "",
+          );
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setBookingLocationsError(
+            error instanceof Error ? error.message : "Could not load studio locations.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setBookingLocationsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [bookingLocationReload]);
 
   useEffect(() => {
     if (!bookingOpen) return;
@@ -389,13 +437,13 @@ function AdminDashboard({
   }, [page, dashboardFetchDateKeys, appointmentsReload]);
 
   useEffect(() => {
-    if (!bookingOpen || !bookingDate) return;
+    if (!bookingOpen || !bookingDate || !bookingLocationId) return;
     const controller = new AbortController();
     setBookingAvailabilityLoading(true);
     setBookingAvailabilityError("");
     setBookingAppointments([]);
     appointmentApi
-      .byDate(bookingDate, controller.signal)
+      .availability(bookingDate, bookingLocationId, controller.signal)
       .then((result) => {
         if (!controller.signal.aborted) setBookingAppointments(result);
       })
@@ -412,7 +460,7 @@ function AdminDashboard({
         if (!controller.signal.aborted) setBookingAvailabilityLoading(false);
       });
     return () => controller.abort();
-  }, [bookingOpen, bookingDate, appointmentsReload]);
+  }, [bookingOpen, bookingDate, bookingLocationId, appointmentsReload]);
 
   const appointmentName = useCallback(
     (item: Appointment) =>
@@ -519,6 +567,10 @@ function AdminDashboard({
       setBookingError("Choose today or a future date.");
       return;
     }
+    if (!bookingLocationId) {
+      setBookingError("Choose a studio for this appointment.");
+      return;
+    }
     if (!bookingTreatmentIds.length) {
       setBookingError("Select at least one treatment.");
       return;
@@ -551,6 +603,7 @@ function AdminDashboard({
         lastName,
         email: bookingEmail.trim(),
         phone: bookingPhone.trim(),
+        locationId: bookingLocationId,
         subServiceIds: bookingTreatmentIds,
         appointmentDate: bookingDate,
         preferredStartTime: bookingTime,
@@ -1137,6 +1190,8 @@ function AdminDashboard({
               notify={notify}
               view={page === "Treatments" ? "subServices" : "services"}
             />
+          ) : page === "Gallery" ? (
+            <AdminGallery />
           ) : (
             <section className="section-page panel">
               <div className="panel-header">
@@ -1464,7 +1519,7 @@ function AdminDashboard({
                   STUDIO SCHEDULING
                 </span>
                 <h2>New appointment</h2>
-                <p>Choose treatments, a preferred time, and client details.</p>
+                <p>Choose a studio, treatments, a preferred time, and client details.</p>
               </div>
               <button
                 type="button"
@@ -1477,6 +1532,43 @@ function AdminDashboard({
             </div>
 
             <div className="admin-booking-fields">
+              <label>
+                Studio location
+                <select
+                  required
+                  value={bookingLocationId}
+                  disabled={bookingLocationsLoading || Boolean(bookingLocationsError)}
+                  onChange={(event) => {
+                    setBookingLocationId(event.target.value);
+                    setBookingTime("");
+                    setBookingAppointments([]);
+                    setBookingAvailabilityError("");
+                    setBookingAvailabilityLoading(true);
+                  }}
+                >
+                  <option value="">
+                    {bookingLocationsLoading ? "Loading studios…" : "Select a studio"}
+                  </option>
+                  {bookingLocations.map((location) => (
+                    <option key={location.locationId} value={location.locationId}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
+                {bookingLocationsError && (
+                  <span className="admin-booking-location-error" role="alert">
+                    Could not load studio locations: {bookingLocationsError}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBookingLocationReload((current) => current + 1)
+                      }
+                    >
+                      Try again
+                    </button>
+                  </span>
+                )}
+              </label>
               <label>
                 Client name
                 <input
@@ -1528,6 +1620,7 @@ function AdminDashboard({
                   required
                   value={bookingTime}
                   disabled={
+                    !bookingLocationId ||
                     bookingAvailabilityLoading ||
                     Boolean(bookingAvailabilityError)
                   }
@@ -1536,10 +1629,10 @@ function AdminDashboard({
                   <option value="">
                     {bookingAvailabilityLoading
                       ? "Checking available times…"
-                      : "Select an hourly slot"}
+                      : "Select a start time"}
                   </option>
                   {APPOINTMENT_TIME_SLOTS.map((slotStart) => {
-                    const value = `${String(Math.floor(slotStart / 60)).padStart(2, "0")}:00`;
+                    const value = `${String(Math.floor(slotStart / 60)).padStart(2, "0")}:${String(slotStart % 60).padStart(2, "0")}`;
                     const past = isAppointmentTimeSlotInPast(
                       bookingDate,
                       slotStart,
@@ -1567,8 +1660,8 @@ function AdminDashboard({
                   })}
                 </select>
                 <small className="admin-booking-hours">
-                  Start times are hourly from 9:00 AM to 9:00 PM; appointments
-                  must end by 10:00 PM.
+                  Start times are available every 30 minutes from 9:00 AM to
+                  10:30 PM; appointments must finish by 11:00 PM.
                 </small>
               </label>
             </div>
@@ -1737,6 +1830,8 @@ function AdminDashboard({
                 type="submit"
                 disabled={
                   bookingSubmitting ||
+                  bookingLocationsLoading ||
+                  Boolean(bookingLocationsError) ||
                   serviceCatalogueLoading ||
                   bookingAvailabilityLoading ||
                   Boolean(bookingAvailabilityError) ||

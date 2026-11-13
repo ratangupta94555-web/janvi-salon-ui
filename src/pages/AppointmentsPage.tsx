@@ -15,6 +15,7 @@ import {
   APPOINTMENT_TIME_SLOTS,
   appointmentApi,
   Appointment,
+  SalonLocation,
   appointmentTimeToMinutes,
   formatAppointmentTime,
   isValidPhoneNumber,
@@ -118,6 +119,11 @@ export default function AppointmentsPage({ navigate }: Props) {
     reload: reloadServices,
   } = useServices();
   const [step, setStep] = useState(1);
+  const [locations, setLocations] = useState<SalonLocation[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+  const [locationsError, setLocationsError] = useState("");
+  const [locationReload, setLocationReload] = useState(0);
+  const [locationId, setLocationId] = useState("");
   const [selectedServices, setSelectedServices] = useState<SelectedService[]>(
     [],
   );
@@ -149,6 +155,40 @@ export default function AppointmentsPage({ navigate }: Props) {
     APPOINTMENT_SLOT_MINUTES,
     selectedServices.reduce((total, service) => total + service.durationMinutes, 0),
   );
+  const selectedLocation = locations.find(
+    (location) => location.locationId === locationId,
+  );
+
+  useEffect(() => {
+    let active = true;
+    setLocationsLoading(true);
+    setLocationsError("");
+    appointmentApi
+      .locations()
+      .then((items) => {
+        if (active) {
+          setLocations(items);
+          setLocationId((current) =>
+            items.some((location) => location.locationId === current)
+              ? current
+              : "",
+          );
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setLocationsError(
+            error instanceof Error ? error.message : "Could not load studio locations.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLocationsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [locationReload]);
 
   useEffect(() => {
     if (step !== 2) return;
@@ -160,13 +200,13 @@ export default function AppointmentsPage({ navigate }: Props) {
   }, [step]);
 
   useEffect(() => {
-    if (!date || step !== 2) return;
+    if (!date || !locationId || step !== 2) return;
     const controller = new AbortController();
     setAvailabilityLoading(true);
     setAvailabilityError("");
     setDayAppointments([]);
     appointmentApi
-      .byDate(date, controller.signal)
+      .availability(date, locationId, controller.signal)
       .then((items) => {
         if (!controller.signal.aborted) setDayAppointments(items);
       })
@@ -183,7 +223,7 @@ export default function AppointmentsPage({ navigate }: Props) {
         if (!controller.signal.aborted) setAvailabilityLoading(false);
       });
     return () => controller.abort();
-  }, [date, step, availabilityReload]);
+  }, [date, locationId, step, availabilityReload]);
 
   const isSlotUnavailable = (slotStart: number) => {
     return isAppointmentTimeSlotUnavailable(
@@ -236,6 +276,10 @@ export default function AppointmentsPage({ navigate }: Props) {
   const next = async () => {
     if (step === 1 && selectedServices.length === 0) {
       setBookingError("Select at least one treatment to continue.");
+      return;
+    }
+    if (step === 1 && !locationId) {
+      setBookingError("Choose the studio where you’d like your appointment.");
       return;
     }
     if (step === 2 && (!date || !time)) {
@@ -294,6 +338,7 @@ export default function AppointmentsPage({ navigate }: Props) {
           lastName,
           email: email.trim(),
           phone: phone.trim(),
+          locationId,
           subServiceIds: selectedIds,
           appointmentDate: date,
           preferredStartTime: time,
@@ -365,6 +410,7 @@ export default function AppointmentsPage({ navigate }: Props) {
               appointment?.startTime ??
                 time,
             )}
+            {selectedLocation ? ` · ${selectedLocation.name}` : ""}
             {appointment?.id ? ` · Booking #${appointment.id}` : ""}
           </p>
           <button className="underlined-link" onClick={() => navigate("/")}>
@@ -382,7 +428,7 @@ export default function AppointmentsPage({ navigate }: Props) {
             <section className="booking-form-card">
               <div className="booking-steps">
                 <span className={step >= 1 ? "current" : ""}>
-                  <i>01</i> Service
+                  <i>01</i> Studio & service
                 </span>
                 <b />
                 <span className={step >= 2 ? "current" : ""}>
@@ -395,6 +441,53 @@ export default function AppointmentsPage({ navigate }: Props) {
               </div>
               {step === 1 && (
                 <div className="booking-step">
+                  <h2>Which studio would you like to visit?</h2>
+                  <p>Choose the location for this booking. Each studio has its own appointment schedule.</p>
+                  {locationsLoading ? (
+                    <BrandLoader
+                      message="Loading studio locations"
+                      detail="Preparing the available salon branches."
+                      variant="compact"
+                    />
+                  ) : locationsError ? (
+                    <div className="booking-availability-error" role="alert">
+                      <span>Could not load locations: {locationsError}</span>
+                      <button
+                        type="button"
+                        onClick={() => setLocationReload((current) => current + 1)}
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="booking-location-list">
+                      {locations.map((location) => (
+                        <label
+                          className={`booking-location-option${locationId === location.locationId ? " selected" : ""}`}
+                          key={location.locationId}
+                        >
+                          <input
+                            type="radio"
+                            name="booking-location"
+                            value={location.locationId}
+                            checked={locationId === location.locationId}
+                            onChange={() => {
+                              setLocationId(location.locationId);
+                              setTime("");
+                              setDayAppointments([]);
+                              setAvailabilityLoading(Boolean(date));
+                              setAvailabilityError("");
+                              setBookingError("");
+                            }}
+                          />
+                          <span>
+                            <strong>{location.name}</strong>
+                            <small>{location.address}</small>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                   <h2>Which services would you like?</h2>
                   <p>
                     Open a service category to choose one or more treatments.
@@ -511,8 +604,8 @@ export default function AppointmentsPage({ navigate }: Props) {
                   <h2>Pick a day that feels good.</h2>
                   <p>
                     Choose today or any upcoming date and a preferred start
-                    time. We’ll confirm the appointment duration based on
-                    your selected services.
+                    time for {selectedLocation?.name ?? "your selected studio"}.
+                    Each studio has a separate schedule.
                   </p>
                   <SelectedServicesSummary
                     services={selectedServices}
@@ -534,7 +627,11 @@ export default function AppointmentsPage({ navigate }: Props) {
                     />
                   </label>
                   <h3>Preferred start time</h3>
-                  {!date ? (
+                  {!locationId ? (
+                    <p className="booking-inline-note">
+                      Choose a studio first to check its appointment times.
+                    </p>
+                  ) : !date ? (
                     <p className="booking-inline-note">
                       Choose a date, then select your preferred start time.
                     </p>
@@ -555,10 +652,10 @@ export default function AppointmentsPage({ navigate }: Props) {
                         <option value="">
                           {availabilityLoading
                             ? "Checking available times…"
-                            : "Select an hourly slot"}
+                            : "Select a start time"}
                         </option>
                         {APPOINTMENT_TIME_SLOTS.map((slotStart) => {
-                          const value = `${String(Math.floor(slotStart / 60)).padStart(2, "0")}:00`;
+                          const value = `${String(Math.floor(slotStart / 60)).padStart(2, "0")}:${String(slotStart % 60).padStart(2, "0")}`;
                           const past = isAppointmentTimeSlotInPast(
                             date,
                             slotStart,
@@ -586,8 +683,8 @@ export default function AppointmentsPage({ navigate }: Props) {
                         })}
                       </select>
                       <small>
-                        Hourly start times from 9:00 AM to 9:00 PM. Your
-                        appointment must finish by 10:00 PM.
+                        Start times are available every 30 minutes from 9:00
+                        AM to 10:30 PM. Your appointment must finish by 11:00 PM.
                       </small>
                     </label>
                   )}

@@ -3,6 +3,7 @@ import "./CustomerPages.css";
 import "./GalleryPortfolio.css";
 import PublicEditorialHero from "../components/common/PublicEditorialHero";
 import StudioHighlights from "../components/common/StudioHighlights";
+import { GalleryMedia, galleryApi } from "../api/gallery";
 type Props = { navigate: (to: string) => void };
 const photos = [
   ["Makeup", "/images/janvi-bridal-makeup.jpeg"],
@@ -126,13 +127,54 @@ const GALLERY_PAGE_SIZE = 9;
 
 export default function GalleryPage({ navigate }: Props) {
   const [filter, setFilter] = useState("All");
-  const visible = photos.filter(([cat]) => filter === "All" || cat === filter);
+  const [uploadedMedia, setUploadedMedia] = useState<GalleryMedia[]>([]);
+  const [mediaError, setMediaError] = useState("");
   const [visibleCount, setVisibleCount] = useState(GALLERY_PAGE_SIZE);
   const [selectedPhoto, setSelectedPhoto] = useState<[string, string] | null>(
     null,
   );
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const galleryPhotos = [
+    ...photos,
+    ...uploadedMedia
+      .filter((media) => media.mediaType === "IMAGE")
+      .map((media) => [media.category, media.secureUrl]),
+  ];
+  const visible = galleryPhotos.filter(
+    ([cat]) => filter === "All" || cat === filter,
+  );
   const visiblePhotos = visible.slice(0, visibleCount);
+  const displayedVideoHighlights = [
+    ...uploadedMedia
+      .filter((media) => media.mediaType === "VIDEO")
+      .map((media) => ({
+        category: media.category.toUpperCase(),
+        title: media.title,
+        poster: "/images/janvi-team-certificate.jpeg",
+        src: media.secureUrl,
+      })),
+    ...videoHighlights,
+  ];
+
+  useEffect(() => {
+    const controller = new AbortController();
+    galleryApi
+      .list(controller.signal)
+      .then((items) => {
+        if (!controller.signal.aborted) {
+          setUploadedMedia(items);
+          setMediaError("");
+        }
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setMediaError(
+            error instanceof Error ? error.message : "New gallery media could not be loaded.",
+          );
+        }
+      });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (visibleCount >= visible.length) return;
@@ -214,8 +256,8 @@ export default function GalleryPage({ navigate }: Props) {
           </p>
         </div>
         <div className="gallery-video-grid">
-          {videoHighlights.map((video) => (
-            <article className="gallery-video-card" key={video.title}>
+          {displayedVideoHighlights.map((video) => (
+            <article className="gallery-video-card" key={video.src}>
               <div className="gallery-video-frame">
                 {video.src ? (
                   <video
@@ -247,6 +289,12 @@ export default function GalleryPage({ navigate }: Props) {
         </div>
       </section>
       <section className="gallery-content">
+        {mediaError && (
+          <p className="gallery-media-error" role="status">
+            Recently uploaded media could not be loaded ({mediaError}). Existing
+            gallery items are still available.
+          </p>
+        )}
         <div className="gallery-filters">
           {["All", "Hair", "Makeup", "Bridal", "Studio"].map((f) => (
             <button

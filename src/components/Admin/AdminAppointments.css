@@ -571,6 +571,25 @@
   opacity: 0.65;
 }
 
+.admin-booking-location-error {
+  display: grid;
+  gap: 6px;
+  color: #a64e5f;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.admin-booking-location-error button {
+  justify-self: start;
+  padding: 5px 8px;
+  border: 1px solid #e8c3d0;
+  border-radius: 5px;
+  background: #fff;
+  color: #a91660;
+  cursor: pointer;
+  font: 600 10px "DM Sans", sans-serif;
+}
+
 .admin-booking-hours {
   color: #928895;
   font-size: 10px;

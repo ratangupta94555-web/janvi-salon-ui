@@ -56,9 +56,9 @@ export function normalizeAppointmentStatus(
   return APPOINTMENT_STATUSES.find((knownStatus) => knownStatus === normalized);
 }
 
-export const APPOINTMENT_SLOT_MINUTES = 60;
+export const APPOINTMENT_SLOT_MINUTES = 30;
 export const APPOINTMENT_OPENING_MINUTES = 9 * 60;
-export const APPOINTMENT_CLOSING_MINUTES = 22 * 60;
+export const APPOINTMENT_CLOSING_MINUTES = 23 * 60;
 export const APPOINTMENT_TIME_SLOTS = Array.from(
   {
     length:
@@ -80,7 +80,8 @@ export function appointmentTimeToMinutes(value?: string): number | undefined {
 
 export function formatAppointmentTime(minutes: number): string {
   const hours = Math.floor(minutes / 60);
-  return `${hours % 12 || 12}:00 ${hours >= 12 ? "PM" : "AM"}`;
+  const minute = String(minutes % 60).padStart(2, "0");
+  return `${hours % 12 || 12}:${minute} ${hours >= 12 ? "PM" : "AM"}`;
 }
 
 export function isAppointmentTimeSlotInPast(
@@ -115,6 +116,8 @@ export type Appointment = {
   lastName?: string;
   email?: string;
   phone?: string;
+  locationId?: string;
+  locationName?: string;
   subServiceIds?: number[];
   items?: AppointmentItem[];
   appointmentDate: string;
@@ -128,6 +131,12 @@ export type Appointment = {
   subtotal?: number;
   discount?: number;
   paymentStatus?: string;
+};
+
+export type SalonLocation = {
+  locationId: string;
+  name: string;
+  address: string;
 };
 
 export function isAppointmentTimeSlotUnavailable(
@@ -176,6 +185,7 @@ export type CreateAppointmentInput = {
   lastName?: string;
   email: string;
   phone: string;
+  locationId: string;
   subServiceIds: number[];
   appointmentDate: string;
   preferredStartTime: string;
@@ -183,6 +193,13 @@ export type CreateAppointmentInput = {
 };
 
 export const appointmentApi = {
+  locations: () =>
+    apiRequest<SalonLocation[]>(
+      "/api/appointments/locations",
+      {},
+      { allowRawArray: true },
+    ),
+
   create: (input: CreateAppointmentInput) =>
     apiRequest<Appointment>(
       "/api/appointments",
@@ -210,6 +227,13 @@ export const appointmentApi = {
   byDate: (date: string, signal?: AbortSignal) =>
     apiRequest<Appointment[]>(
       `/api/appointments/date/${encodeURIComponent(date)}`,
+      { signal },
+      { allowRawArray: true },
+    ),
+
+  availability: (date: string, locationId: string, signal?: AbortSignal) =>
+    apiRequest<Appointment[]>(
+      `/api/appointments/availability?date=${encodeURIComponent(date)}&locationId=${encodeURIComponent(locationId)}`,
       { signal },
       { allowRawArray: true },
     ),

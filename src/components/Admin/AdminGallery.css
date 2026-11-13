@@ -1,0 +1,249 @@
+.admin-gallery {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-gallery-panel {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #eeedf1;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 2px 6px #29223e03;
+}
+
+.admin-gallery-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0eef2;
+}
+
+.admin-gallery-heading h2 {
+  margin: 6px 0 4px;
+  color: #34323e;
+  font: 700 16px Manrope, sans-serif;
+}
+
+.admin-gallery-heading p {
+  margin: 0;
+  color: #8c8997;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.admin-gallery-kicker {
+  color: #8c70bf;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.admin-gallery-limit {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-radius: 15px;
+  background: #f3eff9;
+  color: #775bb4;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.admin-gallery-form {
+  display: grid;
+  gap: 15px;
+  padding-top: 17px;
+}
+
+.admin-gallery-field {
+  display: grid;
+  gap: 7px;
+  color: #5e5b68;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.admin-gallery-field > span {
+  color: #9995a1;
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.admin-gallery-field input,
+.admin-gallery-field select {
+  width: 100%;
+  min-height: 39px;
+  padding: 9px 11px;
+  border: 1px solid #e9e7ed;
+  border-radius: 7px;
+  background: #fff;
+  color: #514d59;
+  font: 400 11px "DM Sans", sans-serif;
+}
+
+.admin-gallery-field input[type="file"] {
+  padding: 7px;
+}
+
+.admin-gallery-field input:focus,
+.admin-gallery-field select:focus {
+  border-color: #a995d0;
+  outline: 2px solid #a995d019;
+}
+
+.admin-gallery-field small {
+  color: #96929e;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.admin-gallery-field code {
+  color: #795db8;
+}
+
+.admin-gallery-file-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-gallery-selected {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-gallery-selected li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #faf9fc;
+  color: #625e6b;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.admin-gallery-selected li > span {
+  color: #8165b8;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.admin-gallery-selected li > small {
+  color: #96929e;
+  font-size: 9px;
+}
+
+.admin-gallery-message {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.admin-gallery-message.error {
+  border: 1px solid #efd2d6;
+  background: #fff7f8;
+  color: #a64e5f;
+}
+
+.admin-gallery-message.success {
+  border: 1px solid #d5e9dd;
+  background: #f5fbf7;
+  color: #508368;
+}
+
+.admin-gallery-form > .primary-button {
+  justify-self: start;
+}
+
+.admin-gallery-refresh {
+  padding: 7px 10px;
+  border: 1px solid #e9e7ed;
+  border-radius: 6px;
+  background: #fff;
+  color: #765bb1;
+  cursor: pointer;
+  font: 600 10px "DM Sans", sans-serif;
+}
+
+.admin-gallery-refresh:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.admin-gallery-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 12px;
+  padding-top: 16px;
+}
+
+.admin-gallery-media-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #efedf2;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.admin-gallery-media-card > img,
+.admin-gallery-media-card > video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #f1eef3;
+}
+
+.admin-gallery-media-card > div {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+}
+
+.admin-gallery-media-card strong {
+  overflow: hidden;
+  color: #4a4652;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-gallery-media-card span {
+  color: #928e9a;
+  font-size: 9px;
+  text-transform: capitalize;
+}
+
+.admin-gallery-empty {
+  margin: 0;
+  padding: 24px 0 4px;
+  color: #928e9a;
+  font-size: 11px;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .admin-gallery-panel {
+    padding: 15px;
+  }
+
+  .admin-gallery-heading {
+    flex-direction: column;
+  }
+
+  .admin-gallery-file-fields {
+    grid-template-columns: 1fr;
+  }
+}
