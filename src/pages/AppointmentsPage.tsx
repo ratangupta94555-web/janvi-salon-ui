@@ -31,7 +31,6 @@ type SelectedService = {
   name: string;
   price: number;
   originalPrice: number;
-  durationMinutes: number;
 };
 
 function serviceCategoryIcon(service: ApiService): string {
@@ -59,11 +58,6 @@ function SelectedServicesSummary({
     (sum, service) => sum + service.price,
     0,
   );
-  const estimatedDuration = services.reduce(
-    (sum, service) => sum + service.durationMinutes,
-    0,
-  );
-
   return (
     <section className="selected-services" aria-label="Selected treatments">
       <div className="selected-services-heading">
@@ -102,10 +96,9 @@ function SelectedServicesSummary({
         <span>Estimated menu total</span>
         <strong>{formatPrice(estimatedTotal)}</strong>
         <small>
-          {estimatedDuration
-            ? `${estimatedDuration} minutes · `
-            : ""}
-          Final price and availability are confirmed by the salon.
+          One {APPOINTMENT_DURATION_MINUTES}-minute appointment slot,
+          regardless of the number of treatments selected. Final price and
+          availability are confirmed by the salon.
         </small>
       </div>
     </section>
@@ -258,7 +251,6 @@ export default function AppointmentsPage({ navigate }: Props) {
               name: item.name,
               price: item.offerPrice ?? item.price,
               originalPrice: item.price,
-              durationMinutes: item.durationMinutes,
             },
           ],
     );
@@ -566,9 +558,6 @@ export default function AppointmentsPage({ navigate }: Props) {
                                 />
                                 <span className="service-item-name">
                                   {item.name}
-                                  {item.durationMinutes > 0 && (
-                                    <small>{item.durationMinutes} min</small>
-                                  )}
                                 </span>
                                 <span className="service-item-price">
                                   {item.offerPrice !== null && (

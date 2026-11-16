@@ -39,3 +39,33 @@ test("allows a 30-minute slot to end at 11 PM but not later", () => {
     ),
   ).toBe(true);
 });
+
+test("uses one 30-minute slot when an appointment has multiple services", () => {
+  const appointments: Parameters<typeof isAppointmentTimeSlotUnavailable>[2] =
+    [
+      {
+        id: 1,
+        appointmentDate: "2026-11-17",
+        startTime: "09:00",
+        status: "CONFIRMED",
+        items: Array.from({ length: 4 }, (_, index) => ({
+          id: index + 1,
+          subServiceId: index + 1,
+          serviceName: "Service",
+          subServiceName: `Treatment ${index + 1}`,
+          unitPrice: 10,
+          durationMinutes: 30,
+          quantity: 1,
+          totalPrice: 10,
+        })),
+      },
+    ];
+
+  expect(
+    isAppointmentTimeSlotUnavailable(
+      9 * 60 + APPOINTMENT_DURATION_MINUTES,
+      APPOINTMENT_DURATION_MINUTES,
+      appointments,
+    ),
+  ).toBe(false);
+});

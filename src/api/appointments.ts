@@ -165,12 +165,7 @@ export function isAppointmentTimeSlotUnavailable(
 
     const explicitEnd = appointmentTimeToMinutes(appointment.endTime);
     const existingDuration =
-      appointment.totalDurationMinutes ??
-      appointment.items?.reduce(
-        (total, item) => total + item.durationMinutes * item.quantity,
-        0,
-      ) ??
-      APPOINTMENT_SLOT_MINUTES;
+      appointment.totalDurationMinutes ?? APPOINTMENT_DURATION_MINUTES;
     const existingEnd =
       explicitEnd !== undefined && explicitEnd > existingStart
         ? explicitEnd

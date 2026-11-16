@@ -1736,7 +1736,6 @@ function AdminDashboard({
                                   )}
                                 </span>
                                 <span className="admin-booking-treatment-meta">
-                                  {treatment.durationMinutes} min ·{" "}
                                   {treatment.offerPrice !== null && (
                                     <del>
                                       {formatPrice(treatment.price)}
@@ -1946,9 +1945,6 @@ function AdminDashboard({
                             <strong>{service.subServiceName}</strong>
                             <small>
                               {service.serviceName}
-                              {service.durationMinutes > 0
-                                ? ` · ${service.durationMinutes} min`
-                                : ""}
                             </small>
                           </span>
                           <strong>{formatPrice(service.totalPrice)}</strong>
