@@ -1,160 +1,31 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./CustomerPages.css";
 import "./GalleryPortfolio.css";
-import PublicEditorialHero from "../components/common/PublicEditorialHero";
 import StudioHighlights from "../components/common/StudioHighlights";
 import { GalleryMedia, galleryApi } from "../api/gallery";
 type Props = { navigate: (to: string) => void };
-const photos = [
-  ["Makeup", "/images/janvi-bridal-makeup.jpeg"],
-  ["Makeup", "/images/janvi-bridal-closeup.jpeg"],
-  ["Studio", "/images/janvi-certificate-with-mentor.jpeg"],
-  ["Hair", "/images/janvi-stylist-portrait.jpeg"],
-  ["Studio", "/images/janvi-team-certificate.jpeg"],
-  ["Makeup", "/images/janvi-makeup-action.jpeg"],
-  ["Makeup", "/images/janvi-bridal-finish.jpeg"],
-  ["Hair", "/images/janvi-hair-styling.jpeg"],
-  ["Makeup", "/images/janvi-makeup-portrait.jpeg"],
-];
-const portfolioNames = [
-  "09.50.18 (1)",
-  "09.50.18",
-  "09.50.19 (1)",
-  "09.50.19 (2)",
-  "09.50.19",
-  "09.50.20 (1)",
-  "09.50.20 (2)",
-  "09.50.20",
-  "09.50.21 (1)",
-  "09.50.21 (2)",
-  "09.50.21",
-  "09.50.22 (2)",
-  "09.50.22",
-  "09.50.23",
-  "09.50.24 (2)",
-  "09.50.25 (1)",
-  "09.50.25",
-  "09.50.24 (1)",
-  "09.50.26 (1)",
-  "09.50.26",
-  "09.50.27 (1)",
-  "09.50.27",
-  "09.51.54",
-  "09.52.10",
-  "09.52.12",
-  "09.52.18 (1)",
-  "09.52.18",
-  "09.52.19",
-  "09.52.20",
-  "09.52.21",
-  "09.52.22 (1)",
-  "09.52.22",
-  "09.52.23",
-  "09.52.24 (1)",
-  "09.52.24",
-  "09.52.27 (1)",
-  "09.52.27",
-  "09.52.28 (1)",
-  "09.52.28",
-  "09.52.29 (1)",
-  "09.52.29",
-  "09.52.30 (1)",
-  "09.52.30 (2)",
-  "09.52.30",
-  "09.52.31 (1)",
-  "09.52.31 (2)",
-  "09.52.31",
-  "09.52.32 (1)",
-  "09.52.32",
-  "09.52.33 (1)",
-  "09.52.33",
-];
-const portfolioPhotos = portfolioNames.map((stamp) => {
-  const time = stamp.split(" ")[0];
-  const file = `WhatsApp Image 2026-09-30 at ${stamp}.jpeg`;
-  const category =
-    stamp === "09.50.25" || stamp === "09.50.27" || time.startsWith("09.52.28")
-      ? "Hair"
-      : time.startsWith("09.52.10") ||
-          time.startsWith("09.52.12") ||
-          time.startsWith("09.52.20") ||
-          time.startsWith("09.52.31") ||
-          time.startsWith("09.52.32") ||
-          time.startsWith("09.52.33")
-        ? "Studio"
-        : time.startsWith("09.52") || time.startsWith("09.51")
-          ? "Bridal"
-          : "Makeup";
-  return [category, `/images/janvi-portfolio/${encodeURIComponent(file)}`] as [
-    string,
-    string,
-  ];
-});
-photos.push(...portfolioPhotos);
-const videoHighlights = [
-  {
-    category: "THE STUDIO",
-    title: "A little time in the chair",
-    poster: "/images/janvi-team-certificate.jpeg",
-    src: "/videos/janvi-salon-01.mp4",
-  },
-  {
-    category: "BRIDAL",
-    title: "The finishing touches",
-    poster: "/images/janvi-bridal-finish.jpeg",
-    src: "/videos/janvi-salon-02.mp4",
-  },
-  {
-    category: "HAIR",
-    title: "Style, made personal",
-    poster: "/images/janvi-hair-styling.jpeg",
-    src: "/videos/janvi-salon-03.mp4",
-  },
-  {
-    category: "MAKEUP",
-    title: "From first brush to final look",
-    poster: "/images/janvi-makeup-action.jpeg",
-    src: "/videos/janvi-salon-04.mp4",
-  },
-  {
-    category: "SALON MOMENTS",
-    title: "Care in every detail",
-    poster: "/images/janvi-stylist-portrait.jpeg",
-    src: "/videos/janvi-salon-05.mp4",
-  },
-];
 const GALLERY_PAGE_SIZE = 9;
 
 export default function GalleryPage({ navigate }: Props) {
   const [filter, setFilter] = useState("All");
   const [uploadedMedia, setUploadedMedia] = useState<GalleryMedia[]>([]);
   const [mediaError, setMediaError] = useState("");
+  const [mediaLoading, setMediaLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(GALLERY_PAGE_SIZE);
   const [selectedPhoto, setSelectedPhoto] = useState<[string, string] | null>(
     null,
   );
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const galleryPhotos = [
-    ...photos,
-    ...uploadedMedia
-      .filter((media) => media.mediaType === "IMAGE")
-      .map((media) => [media.category, media.secureUrl]),
-  ];
+  const galleryPhotos = uploadedMedia
+    .filter((media) => media.mediaType === "IMAGE")
+    .map((media) => [media.category, media.secureUrl]);
   const visible = galleryPhotos.filter(
     ([cat]) => filter === "All" || cat === filter,
   );
   const visiblePhotos = visible.slice(0, visibleCount);
-  const displayedVideoHighlights = [
-    ...uploadedMedia
-      .filter((media) => media.mediaType === "VIDEO")
-      .map((media) => ({
-        category: media.category.toUpperCase(),
-        title: media.title,
-        poster: "/images/janvi-team-certificate.jpeg",
-        src: media.secureUrl,
-      })),
-    ...videoHighlights,
-  ];
+  const uploadedVideos = uploadedMedia.filter(
+    (media) => media.mediaType === "VIDEO",
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -164,13 +35,17 @@ export default function GalleryPage({ navigate }: Props) {
         if (!controller.signal.aborted) {
           setUploadedMedia(items);
           setMediaError("");
+          setMediaLoading(false);
         }
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
           setMediaError(
-            error instanceof Error ? error.message : "New gallery media could not be loaded.",
+            error instanceof Error
+              ? error.message
+              : "Gallery media could not be loaded.",
           );
+          setMediaLoading(false);
         }
       });
     return () => controller.abort();
@@ -215,32 +90,26 @@ export default function GalleryPage({ navigate }: Props) {
 
   return (
     <main className="customer-page">
-      <PublicEditorialHero
-        kicker="A LITTLE INSPIRATION"
-        title={
-          <>
+      <section className="inner-hero about-hero public-page-hero gallery-page-hero">
+        <div className="about-hero-copy">
+          <span className="page-kicker">A LITTLE INSPIRATION</span>
+          <h1>
             Made here.
             <br />
             <em>Worn everywhere.</em>
-          </>
-        }
-        description="Real people, real lovely hair, and the moments in between."
-        image="/images/janvi-bridal-finish.jpeg"
-        imageAlt="A finished bridal makeup look by Janvi"
-        secondaryImage="/images/janvi-hair-styling.jpeg"
-        secondaryImageAlt="Janvi styling a client's hair"
-        secondaryCaption="Hair, with care"
-        caption="Beauty, made personal"
-        index="02"
-        imageLabel="THE PORTFOLIO"
-        note={
-          <>
+          </h1>
+          <p>Real people, real lovely hair, and the moments in between.</p>
+          <button
+            className="editorial-button"
+            onClick={() => navigate("/appointments")}
+          >
+            Book your visit <span>↗</span>
+          </button>
+          <span className="about-hero-note">
             Hair <i>·</i> Makeup <i>·</i> Studio
-          </>
-        }
-        actionLabel="Book your visit"
-        onAction={() => navigate("/appointments")}
-      />
+          </span>
+        </div>
+      </section>
       <StudioHighlights page="gallery" />
       <section
         className="gallery-video-section"
@@ -255,44 +124,39 @@ export default function GalleryPage({ navigate }: Props) {
             Little glimpses of the care, craft, and creativity behind each look.
           </p>
         </div>
-        <div className="gallery-video-grid">
-          {displayedVideoHighlights.map((video) => (
-            <article className="gallery-video-card" key={video.src}>
-              <div className="gallery-video-frame">
-                {video.src ? (
+        {mediaLoading ? (
+          <p className="gallery-empty-state" role="status">
+            Loading videos…
+          </p>
+        ) : mediaError ? null : uploadedVideos.length ? (
+          <div className="gallery-video-grid">
+            {uploadedVideos.map((video) => (
+              <article className="gallery-video-card" key={video.secureUrl}>
+                <div className="gallery-video-frame">
                   <video
                     controls
                     playsInline
                     preload="metadata"
-                    poster={video.poster}
-                  >
-                    <source src={video.src} type="video/mp4" />
-                  </video>
-                ) : (
-                  <div className="gallery-video-placeholder">
-                    <img src={video.poster} alt="" />
-                    <span className="gallery-video-play" aria-hidden="true">
-                      ▶
-                    </span>
-                    <span className="gallery-video-status">
-                      Video coming soon
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="gallery-video-copy">
-                <span>{video.category}</span>
-                <h3>{video.title}</h3>
-              </div>
-            </article>
-          ))}
-        </div>
+                    src={video.secureUrl}
+                  />
+                </div>
+                <div className="gallery-video-copy">
+                  <span>{video.category.toUpperCase()}</span>
+                  <h3>{video.title}</h3>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="gallery-empty-state" role="status">
+            No videos yet.
+          </p>
+        )}
       </section>
       <section className="gallery-content">
         {mediaError && (
           <p className="gallery-media-error" role="status">
-            Recently uploaded media could not be loaded ({mediaError}). Existing
-            gallery items are still available.
+            Gallery media could not be loaded ({mediaError}).
           </p>
         )}
         <div className="gallery-filters">
@@ -306,29 +170,41 @@ export default function GalleryPage({ navigate }: Props) {
             </button>
           ))}
         </div>
-        <div className="gallery-grid">
-          {visiblePhotos.map(([cat, img], i) => (
-            <figure
-              key={img}
-              className={`gallery-photo gallery-photo-${i % 6}`}
-            >
-              <button
-                className="gallery-photo-open"
-                type="button"
-                aria-label={`View ${cat.toLowerCase()} photo`}
-                onClick={() => setSelectedPhoto([cat, img])}
+        {mediaLoading ? (
+          <p className="gallery-empty-state" role="status">
+            Loading photos…
+          </p>
+        ) : mediaError ? null : visiblePhotos.length ? (
+          <div className="gallery-grid">
+            {visiblePhotos.map(([cat, img], i) => (
+              <figure
+                key={img}
+                className={`gallery-photo gallery-photo-${i % 6}`}
               >
-                <img
-                  src={img}
-                  alt={`${cat} portfolio at Janvi Makeover Studio`}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </button>
-              <figcaption>{cat} · Janvi Makeover Studio</figcaption>
-            </figure>
-          ))}
-        </div>
+                <button
+                  className="gallery-photo-open"
+                  type="button"
+                  aria-label={`View ${cat.toLowerCase()} photo`}
+                  onClick={() => setSelectedPhoto([cat, img])}
+                >
+                  <img
+                    src={img}
+                    alt={`${cat} portfolio at Janvi Makeover Studio`}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </button>
+                <figcaption>{cat} · Janvi Makeover Studio</figcaption>
+              </figure>
+            ))}
+          </div>
+        ) : (
+          <p className="gallery-empty-state" role="status">
+            {galleryPhotos.length
+              ? "No photos in this category."
+              : "No photos yet."}
+          </p>
+        )}
         {visibleCount < visible.length && (
           <div
             ref={loadMoreRef}
