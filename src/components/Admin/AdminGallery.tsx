@@ -13,9 +13,10 @@ const categories: GalleryCategory[] = ["Makeup", "Hair", "Bridal", "Studio"];
 
 type AdminGalleryProps = {
   view: "photos" | "videos";
+  notify: (message: string) => void;
 };
 
-export default function AdminGallery({ view }: AdminGalleryProps) {
+export default function AdminGallery({ view, notify }: AdminGalleryProps) {
   const [media, setMedia] = useState<GalleryMedia[]>([]);
   const [images, setImages] = useState<File[]>([]);
   const [video, setVideo] = useState<File | null>(null);
@@ -25,8 +26,6 @@ export default function AdminGallery({ view }: AdminGalleryProps) {
   const [loadError, setLoadError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [notice, setNotice] = useState("");
-  const [deleteError, setDeleteError] = useState("");
-  const [deleteNotice, setDeleteNotice] = useState("");
   const [deletingMediaId, setDeletingMediaId] = useState<number | null>(null);
   const [reload, setReload] = useState(0);
   const imageInput = useRef<HTMLInputElement>(null);
@@ -59,8 +58,6 @@ export default function AdminGallery({ view }: AdminGalleryProps) {
     setVideo(null);
     setUploadError("");
     setNotice("");
-    setDeleteError("");
-    setDeleteNotice("");
     if (imageInput.current) imageInput.current.value = "";
     if (videoInput.current) videoInput.current.value = "";
   }, [view]);
@@ -126,14 +123,12 @@ export default function AdminGallery({ view }: AdminGalleryProps) {
     }
 
     setDeletingMediaId(item.id);
-    setDeleteError("");
-    setDeleteNotice("");
     try {
       await galleryApi.remove(item.id);
       setMedia((current) => current.filter((mediaItem) => mediaItem.id !== item.id));
-      setDeleteNotice("Media permanently deleted from the gallery and Cloudinary.");
+      notify("Media permanently deleted from the gallery and Cloudinary.");
     } catch (error) {
-      setDeleteError(
+      notify(
         error instanceof Error
           ? error.message
           : "Gallery media could not be permanently deleted.",
@@ -285,16 +280,6 @@ export default function AdminGallery({ view }: AdminGalleryProps) {
             Refresh
           </button>
         </div>
-        {deleteError && (
-          <p className="admin-gallery-message error" role="alert">
-            {deleteError}
-          </p>
-        )}
-        {deleteNotice && (
-          <p className="admin-gallery-message success" role="status">
-            {deleteNotice}
-          </p>
-        )}
         {loading ? (
           <BrandLoader message="Loading gallery media" variant="compact" />
         ) : loadError ? (

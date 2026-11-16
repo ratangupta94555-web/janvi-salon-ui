@@ -199,11 +199,40 @@ export default function GalleryPage({ navigate }: Props) {
             ))}
           </div>
         ) : (
-          <p className="gallery-empty-state" role="status">
-            {galleryPhotos.length
-              ? "No photos in this category."
-              : "No photos yet."}
-          </p>
+          <div
+            className={`gallery-empty-state ${galleryPhotos.length ? "filtered" : "no-photos"}`}
+            role="status"
+          >
+            <span className="gallery-empty-art" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none">
+                <rect x="12" y="15" width="40" height="34" rx="3" />
+                <circle cx="25" cy="27" r="4" />
+                <path d="m16 44 12-12 8 8 5-5 7 9" />
+                <path d="m49 10 1.5 4.5L55 16l-4.5 1.5L49 22l-1.5-4.5L43 16l4.5-1.5L49 10Z" />
+              </svg>
+            </span>
+            <div className="gallery-empty-copy">
+              <span className="gallery-empty-kicker">
+                {galleryPhotos.length ? "A DIFFERENT LITTLE MOMENT" : "THE GALLERY IS BLOOMING"}
+              </span>
+              <h2>{galleryPhotos.length ? "No photos in this category." : "No photos yet."}</h2>
+              <p>
+                {galleryPhotos.length
+                  ? "There are no looks in this collection just yet. Explore all our studio moments instead."
+                  : "We’re getting the studio’s latest looks ready for you. Check back soon, or come create a moment of your own."}
+              </p>
+            </div>
+            <button
+              className="gallery-empty-action"
+              type="button"
+              onClick={() =>
+                galleryPhotos.length ? selectFilter("All") : navigate("/appointments")
+              }
+            >
+              {galleryPhotos.length ? "View all photos" : "Book your visit"}
+              <span aria-hidden="true">↗</span>
+            </button>
+          </div>
         )}
         {visibleCount < visible.length && (
           <div

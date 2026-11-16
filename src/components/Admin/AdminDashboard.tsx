@@ -1364,7 +1364,10 @@ function AdminDashboard({
               view={page === "Treatments" ? "subServices" : "services"}
             />
           ) : page === "Photos" || page === "Videos" ? (
-            <AdminGallery view={page === "Videos" ? "videos" : "photos"} />
+            <AdminGallery
+              view={page === "Videos" ? "videos" : "photos"}
+              notify={notify}
+            />
           ) : (
             <section className="section-page panel">
               <div className="panel-header">
