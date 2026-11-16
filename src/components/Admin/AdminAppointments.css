@@ -158,6 +158,24 @@
   outline-offset: 2px;
 }
 
+.admin-appointment-delete-button {
+  display: inline-grid;
+  margin-left: 6px;
+  border-color: #f0d9dc;
+  background: #fff8f8;
+  color: #b94d5a;
+}
+
+.admin-appointment-delete-button:hover {
+  border-color: #e5afb6;
+  background: #fff0f1;
+}
+
+.admin-appointment-delete-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .admin-appointment-status-select {
   min-height: 30px;
   max-width: 120px;

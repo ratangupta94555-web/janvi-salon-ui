@@ -9,9 +9,21 @@ import ServicesPage from "./pages/ServicesPage";
 import GalleryPage from "./pages/GalleryPage";
 import ContactPage from "./pages/ContactPage";
 import FAQPage from "./pages/FAQPage";
+import NotFoundPage from "./pages/NotFoundPage";
 import { adminApi } from "./api/services";
 
 const ADMIN_SESSION_KEY = "janvi-admin-session";
+const ADMIN_PATHS = new Set([
+  "/admin",
+  "/admin/dashboard",
+  "/admin/appointments",
+  "/admin/clients",
+  "/admin/services",
+  "/admin/treatments",
+  "/admin/gallery",
+  "/admin/gallery/photos",
+  "/admin/gallery/videos",
+]);
 
 function App() {
   const normalizePath = (pathname: string) => {
@@ -25,7 +37,7 @@ function App() {
     () => window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "active",
   );
   const [requestedAdminPath, setRequestedAdminPath] = useState(() =>
-    pathIsAdmin(window.location.pathname)
+    isAdminPath(window.location.pathname)
       ? normalizeInitialAdminPath(window.location.pathname)
       : "/admin/dashboard",
   );
@@ -63,7 +75,7 @@ function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
   useEffect(() => {
-    if (pathIsAdmin(path) && !adminAuthenticated) {
+    if (isAdminPath(path) && !adminAuthenticated) {
       setRequestedAdminPath(path);
       window.history.replaceState({}, "", "/login");
       setPath("/login");
@@ -77,7 +89,7 @@ function App() {
   }, [path, adminAuthenticated, requestedAdminPath]);
   const navigate = (to: string) => {
     const normalized = normalizePath(to);
-    if (pathIsAdmin(normalized) && !adminAuthenticated) {
+    if (isAdminPath(normalized) && !adminAuthenticated) {
       setRequestedAdminPath(normalized);
       window.history.pushState({}, "", "/login");
       setPath("/login");
@@ -94,7 +106,7 @@ function App() {
       />
     );
   }
-  if (pathIsAdmin(path)) {
+  if (isAdminPath(path)) {
     return (
       <AdminDashboard
         pathname={path}
@@ -106,6 +118,9 @@ function App() {
   const pageProps = { navigate };
   let page: React.ReactNode;
   switch (path) {
+    case "/":
+      page = <LandingPage {...pageProps} />;
+      break;
     case "/appointments":
       page = <AppointmentsPage {...pageProps} />;
       break;
@@ -125,7 +140,7 @@ function App() {
       page = <FAQPage {...pageProps} />;
       break;
     default:
-      page = <LandingPage {...pageProps} />;
+      page = <NotFoundPage {...pageProps} />;
   }
   return (
     <PublicLayout path={path} navigate={navigate}>
@@ -134,8 +149,8 @@ function App() {
   );
 }
 
-function pathIsAdmin(pathname: string): boolean {
-  return pathname === "/admin" || pathname.startsWith("/admin/");
+function isAdminPath(pathname: string): boolean {
+  return ADMIN_PATHS.has(pathname);
 }
 
 function normalizeInitialAdminPath(pathname: string): string {

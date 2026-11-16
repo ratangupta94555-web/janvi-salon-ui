@@ -43,6 +43,7 @@ type IconName =
   | "chevron"
   | "close"
   | "eye"
+  | "trash"
   | "menu"
   | "gallery"
   | "logout"
@@ -132,6 +133,12 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
       <>
         <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
         <circle cx="12" cy="12" r="2.5" />
+      </>
+    ),
+    trash: (
+      <>
+        <path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6" />
+        <path d="M10 11v5m4-5v5" />
       </>
     ),
     menu: (
@@ -283,6 +290,8 @@ function AdminDashboard({
   );
   const dashboardToday = dashboardDateKeys[dashboardDateKeys.length - 1];
   const [appointmentStatusUpdatingId, setAppointmentStatusUpdatingId] =
+    useState<number | null>(null);
+  const [appointmentDeletingId, setAppointmentDeletingId] =
     useState<number | null>(null);
   const [detailsAppointment, setDetailsAppointment] =
     useState<Appointment | null>(null);
@@ -655,6 +664,35 @@ function AdminDashboard({
       setAppointmentsReload((current) => current + 1);
     } finally {
       setAppointmentStatusUpdatingId(null);
+    }
+  };
+  const deleteAppointment = async (appointment: Appointment) => {
+    const customerName = appointmentName(appointment);
+    if (
+      !window.confirm(
+        `Permanently delete ${customerName}'s appointment #${appointment.id}? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    setAppointmentDeletingId(appointment.id);
+    try {
+      await appointmentApi.delete(appointment.id);
+      if (detailsAppointment?.id === appointment.id) {
+        setDetailsAppointment(null);
+        setDetailsError("");
+      }
+      setAppointmentsReload((current) => current + 1);
+      notify("Appointment permanently deleted.");
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Appointment could not be permanently deleted.",
+      );
+    } finally {
+      setAppointmentDeletingId(null);
     }
   };
   const dashboardActiveAppointments = dashboardAppointments.filter((item) => {
@@ -1526,6 +1564,16 @@ function AdminDashboard({
                                 onClick={() => void openAppointmentDetails(item)}
                               >
                                 <Icon name="eye" size={16} />
+                              </button>
+                              <button
+                                className="admin-appointment-details-button admin-appointment-delete-button"
+                                type="button"
+                                aria-label={`Permanently delete appointment for ${customerName}`}
+                                title="Permanently delete appointment"
+                                disabled={appointmentDeletingId === item.id}
+                                onClick={() => void deleteAppointment(item)}
+                              >
+                                <Icon name="trash" size={16} />
                               </button>
                             </td>
                           </tr>

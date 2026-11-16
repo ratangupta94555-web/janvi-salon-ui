@@ -25,6 +25,9 @@ export default function AdminGallery({ view }: AdminGalleryProps) {
   const [loadError, setLoadError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [notice, setNotice] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteNotice, setDeleteNotice] = useState("");
+  const [deletingMediaId, setDeletingMediaId] = useState<number | null>(null);
   const [reload, setReload] = useState(0);
   const imageInput = useRef<HTMLInputElement>(null);
   const videoInput = useRef<HTMLInputElement>(null);
@@ -56,6 +59,8 @@ export default function AdminGallery({ view }: AdminGalleryProps) {
     setVideo(null);
     setUploadError("");
     setNotice("");
+    setDeleteError("");
+    setDeleteNotice("");
     if (imageInput.current) imageInput.current.value = "";
     if (videoInput.current) videoInput.current.value = "";
   }, [view]);
@@ -109,6 +114,32 @@ export default function AdminGallery({ view }: AdminGalleryProps) {
       );
     } finally {
       setUploading(false);
+    }
+  };
+  const deleteMedia = async (item: GalleryMedia) => {
+    if (
+      !window.confirm(
+        `Permanently delete "${item.title}" from the gallery and Cloudinary? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    setDeletingMediaId(item.id);
+    setDeleteError("");
+    setDeleteNotice("");
+    try {
+      await galleryApi.remove(item.id);
+      setMedia((current) => current.filter((mediaItem) => mediaItem.id !== item.id));
+      setDeleteNotice("Media permanently deleted from the gallery and Cloudinary.");
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : "Gallery media could not be permanently deleted.",
+      );
+    } finally {
+      setDeletingMediaId(null);
     }
   };
   const visibleMedia = media.filter((item) =>
@@ -254,6 +285,16 @@ export default function AdminGallery({ view }: AdminGalleryProps) {
             Refresh
           </button>
         </div>
+        {deleteError && (
+          <p className="admin-gallery-message error" role="alert">
+            {deleteError}
+          </p>
+        )}
+        {deleteNotice && (
+          <p className="admin-gallery-message success" role="status">
+            {deleteNotice}
+          </p>
+        )}
         {loading ? (
           <BrandLoader message="Loading gallery media" variant="compact" />
         ) : loadError ? (
@@ -272,6 +313,14 @@ export default function AdminGallery({ view }: AdminGalleryProps) {
                 <div>
                   <strong>{item.title}</strong>
                   <span>{item.category} · {item.mediaType.toLowerCase()}</span>
+                  <button
+                    className="admin-gallery-delete"
+                    type="button"
+                    disabled={deletingMediaId === item.id}
+                    onClick={() => void deleteMedia(item)}
+                  >
+                    {deletingMediaId === item.id ? "Deleting…" : "Permanently delete"}
+                  </button>
                 </div>
               </article>
             ))}

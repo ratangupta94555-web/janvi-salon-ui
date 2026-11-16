@@ -1,0 +1,112 @@
+.not-found-page {
+  display: grid;
+  min-height: 500px;
+  place-items: center;
+  padding: 60px 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 12% 82%, #df16851b 0, transparent 38%),
+    radial-gradient(ellipse at 88% 16%, #138da816 0, transparent 34%),
+    linear-gradient(112deg, #fff8fb 0%, #f7e9f1 56%, #edf8f9 100%);
+  text-align: center;
+}
+
+.not-found-card {
+  position: relative;
+  width: min(100%, 560px);
+  padding: 42px 32px;
+  border: 1px solid #fff9;
+  border-radius: 12px;
+  background: #fffdfaeb;
+  box-shadow: 0 18px 55px #562b4e12;
+}
+
+.not-found-flower {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  margin: 0 auto 17px;
+  border-radius: 50%;
+  background: #f9eaf2;
+  color: #df1685;
+  font-size: 23px;
+}
+
+.not-found-code {
+  margin: 12px 0 0;
+  color: #df1685;
+  font: 800 clamp(66px, 13vw, 94px)/1 Manrope, sans-serif;
+  letter-spacing: -7px;
+}
+
+.not-found-card h1 {
+  margin: 10px 0 0;
+  color: #272436;
+  font: 700 clamp(22px, 4vw, 30px)/1.25 Manrope, sans-serif;
+  letter-spacing: -0.8px;
+}
+
+.not-found-description {
+  max-width: 390px;
+  margin: 12px auto 0;
+  color: #716a72;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.not-found-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  margin-top: 25px;
+}
+
+.not-found-home-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 3px;
+  background: #df1685;
+  box-shadow: 0 5px 14px #df168526;
+  color: #fff;
+  cursor: pointer;
+  font: 600 12px "DM Sans", sans-serif;
+}
+
+.not-found-home-button:hover {
+  background: #bd126f;
+}
+
+.not-found-book-link {
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid #df168566;
+  background: transparent;
+  color: #bd126f;
+  cursor: pointer;
+  font: 600 12px "DM Sans", sans-serif;
+}
+
+.not-found-home-button:focus-visible,
+.not-found-book-link:focus-visible {
+  outline: 2px solid #138da8;
+  outline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+  .not-found-page {
+    min-height: 430px;
+    padding: 38px 16px;
+  }
+
+  .not-found-card {
+    padding: 34px 20px;
+  }
+}

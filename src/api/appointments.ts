@@ -239,6 +239,16 @@ export const appointmentApi = {
       method: "PATCH",
     }),
 
+  delete: (appointmentId: number) =>
+    apiRequest<void>(
+      `/api/appointments/${appointmentId}/admin`,
+      {
+        method: "DELETE",
+        headers: { "X-Admin-Request": "true" },
+      },
+      { credentials: "include" },
+    ),
+
   updateStatus: (appointmentId: number, status: AppointmentStatus) =>
     apiRequest<Appointment>(
       `/api/appointments/${appointmentId}/status`,

@@ -74,4 +74,14 @@ export const galleryApi = {
       { allowRawArray: true, credentials: "include" },
     );
   },
+
+  remove: (mediaId: number) =>
+    apiRequest<void>(
+      `/api/gallery/admin/${mediaId}`,
+      {
+        method: "DELETE",
+        headers: { "X-Admin-Request": "true" },
+      },
+      { credentials: "include" },
+    ),
 };
