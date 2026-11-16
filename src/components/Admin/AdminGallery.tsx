@@ -125,7 +125,7 @@ export default function AdminGallery() {
               required
             />
             <small>
-              Set <code>GALLERY_ADMIN_TOKEN</code> on the backend. This value is
+              Set <code>CLOUDINARY_ADMIN_TOKEN</code> on the backend. This value is
               only kept in this page’s memory.
             </small>
           </label>

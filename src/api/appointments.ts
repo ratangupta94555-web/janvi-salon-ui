@@ -57,6 +57,7 @@ export function normalizeAppointmentStatus(
 }
 
 export const APPOINTMENT_SLOT_MINUTES = 30;
+export const APPOINTMENT_DURATION_MINUTES = 30;
 export const APPOINTMENT_OPENING_MINUTES = 9 * 60;
 export const APPOINTMENT_CLOSING_MINUTES = 23 * 60;
 export const APPOINTMENT_TIME_SLOTS = Array.from(

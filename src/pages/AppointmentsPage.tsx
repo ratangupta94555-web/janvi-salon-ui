@@ -11,6 +11,7 @@ import {
 } from "../api/services";
 import {
   APPOINTMENT_CLOSING_MINUTES,
+  APPOINTMENT_DURATION_MINUTES,
   APPOINTMENT_SLOT_MINUTES,
   APPOINTMENT_TIME_SLOTS,
   appointmentApi,
@@ -151,10 +152,6 @@ export default function AppointmentsPage({ navigate }: Props) {
   const selectedIds = selectedServices
     .map((service) => service.subServiceId)
     .sort((a, b) => a - b);
-  const selectedDurationMinutes = Math.max(
-    APPOINTMENT_SLOT_MINUTES,
-    selectedServices.reduce((total, service) => total + service.durationMinutes, 0),
-  );
   const selectedLocation = locations.find(
     (location) => location.locationId === locationId,
   );
@@ -228,7 +225,7 @@ export default function AppointmentsPage({ navigate }: Props) {
   const isSlotUnavailable = (slotStart: number) => {
     return isAppointmentTimeSlotUnavailable(
       slotStart,
-      selectedDurationMinutes,
+      APPOINTMENT_DURATION_MINUTES,
       dayAppointments,
     ) || isAppointmentTimeSlotInPast(date, slotStart, availabilityClock);
   };
@@ -673,7 +670,7 @@ export default function AppointmentsPage({ navigate }: Props) {
                               {past
                                 ? " · Time passed"
                                 : unavailable
-                                ? slotStart + selectedDurationMinutes >
+                                ? slotStart + APPOINTMENT_DURATION_MINUTES >
                                   APPOINTMENT_CLOSING_MINUTES
                                   ? " · Ends after closing"
                                   : " · Booked"

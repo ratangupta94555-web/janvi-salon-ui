@@ -7,6 +7,7 @@ import "./AdminAppointments.css";
 import BrandLoader from "../common/BrandLoader";
 import {
   APPOINTMENT_CLOSING_MINUTES,
+  APPOINTMENT_DURATION_MINUTES,
   APPOINTMENT_SLOT_MINUTES,
   APPOINTMENT_STATUSES,
   APPOINTMENT_TIME_SLOTS,
@@ -358,21 +359,6 @@ function AdminDashboard({
       ),
     0,
   );
-  const bookingDurationMinutes = Math.max(
-    APPOINTMENT_SLOT_MINUTES,
-    serviceCatalogue.reduce(
-      (total, service) =>
-        total +
-        service.subServices.reduce(
-          (serviceTotal, treatment) =>
-            bookingTreatmentIds.includes(treatment.id)
-              ? serviceTotal + treatment.durationMinutes
-              : serviceTotal,
-          0,
-        ),
-      0,
-    ),
-  );
   const todayLabel = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
@@ -538,7 +524,7 @@ function AdminDashboard({
   const isBookingSlotUnavailable = (slotStart: number) => {
     return isAppointmentTimeSlotUnavailable(
       slotStart,
-      bookingDurationMinutes,
+      APPOINTMENT_DURATION_MINUTES,
       bookingAppointments,
     ) ||
       isAppointmentTimeSlotInPast(
@@ -1650,7 +1636,7 @@ function AdminDashboard({
                         {past
                           ? " · Time passed"
                           : unavailable
-                          ? slotStart + bookingDurationMinutes >
+                          ? slotStart + APPOINTMENT_DURATION_MINUTES >
                             APPOINTMENT_CLOSING_MINUTES
                             ? " · Ends after closing"
                             : " · Booked"
