@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./CustomerPages.css";
 import "./GalleryPortfolio.css";
+import PublicEditorialHero from "../components/common/PublicEditorialHero";
 import StudioHighlights from "../components/common/StudioHighlights";
 import { GalleryMedia, galleryApi } from "../api/gallery";
 type Props = { navigate: (to: string) => void };
@@ -90,26 +91,33 @@ export default function GalleryPage({ navigate }: Props) {
 
   return (
     <main className="customer-page">
-      <section className="inner-hero about-hero public-page-hero gallery-page-hero">
-        <div className="about-hero-copy">
-          <span className="page-kicker">A LITTLE INSPIRATION</span>
-          <h1>
+      <PublicEditorialHero
+        className="gallery-page-hero"
+        kicker="A LITTLE INSPIRATION"
+        title={
+          <>
             Made here.
             <br />
             <em>Worn everywhere.</em>
-          </h1>
-          <p>Real people, real lovely hair, and the moments in between.</p>
-          <button
-            className="editorial-button"
-            onClick={() => navigate("/appointments")}
-          >
-            Book your visit <span>↗</span>
-          </button>
-          <span className="about-hero-note">
+          </>
+        }
+        description="Real people, real lovely hair, and the moments in between."
+        image="/images/janvi-bridal-finish.jpeg"
+        imageAlt="A bridal makeup look by Janvi Makeover"
+        secondaryImage="/images/janvi-makeup-portrait.jpeg"
+        secondaryImageAlt="A finished makeup look by Janvi"
+        secondaryCaption="Beauty, with care"
+        caption="Looks made to feel like you"
+        index="02"
+        imageLabel="THE GALLERY"
+        note={
+          <>
             Hair <i>·</i> Makeup <i>·</i> Studio
-          </span>
-        </div>
-      </section>
+          </>
+        }
+        actionLabel="Book your visit"
+        onAction={() => navigate("/appointments")}
+      />
       <StudioHighlights page="gallery" />
       <section
         className="gallery-video-section"

@@ -1,11 +1,3 @@
-.gallery-page-hero {
-  grid-template-columns: minmax(0, 1fr);
-  min-height: 340px;
-}
-.gallery-page-hero > .about-hero-copy {
-  max-width: 760px;
-  grid-row: 1;
-}
 .gallery-empty-card {
   grid-column: 1 / -1;
   position: relative;
