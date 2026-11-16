@@ -1458,3 +1458,47 @@
     width: 100%;
   }
 }
+
+.admin-appointment-table {
+  min-width: 1180px;
+}
+
+.admin-appointment-location {
+  display: flex;
+  min-width: 190px;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-appointment-location-icon {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #e9e1f2;
+  border-radius: 9px;
+  background: #f7f3fb;
+  color: #8062b0;
+}
+
+.admin-appointment-location > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.admin-appointment-location strong {
+  display: block;
+  max-width: 205px;
+  overflow: hidden;
+  color: #51465f;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-appointment-location small {
+  color: #9892a0;
+  font-size: 8px;
+}

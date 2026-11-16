@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { adminApi } from "../../api/services";
 import StudioIcon from "../StudioIcon";
 import "./AdminLogin.css";
 
@@ -7,34 +8,32 @@ type Props = {
   onAuthenticated: () => void;
 };
 
-const adminCredentials = [
-  { username: "ratan@gmail.com", password: "ratan@123" },
-  { username: "admin", password: "admin123" },
-];
-
 export default function AdminLogin({ navigate, onAuthenticated }: Props) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [notice, setNotice] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const submitLogin = (event: React.FormEvent<HTMLFormElement>) => {
+  const submitLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!username.trim() || !password) {
       setNotice("Enter both your username and password.");
       return;
     }
-    const isValid = adminCredentials.some(
-      (credential) =>
-        credential.username === username.trim() &&
-        credential.password === password,
-    );
-    if (isValid) {
+    setSubmitting(true);
+    setNotice("");
+    try {
+      await adminApi.login(username.trim(), password);
       setNotice("");
       onAuthenticated();
-      return;
+    } catch (error) {
+      setNotice(
+        error instanceof Error ? error.message : "Unable to sign in right now.",
+      );
+    } finally {
+      setSubmitting(false);
     }
-    setNotice("Username or password is invalid.");
   };
 
   return (
@@ -96,9 +95,6 @@ export default function AdminLogin({ navigate, onAuthenticated }: Props) {
               <em>studio account.</em>
             </h2>
             <p>Use your studio credentials to continue.</p>
-            <p className="admin-login-demo">
-              Demo access: ratatn@gmail.com / ratan@123
-            </p>
           </div>
 
           <form className="admin-login-form" onSubmit={submitLogin}>
@@ -142,8 +138,8 @@ export default function AdminLogin({ navigate, onAuthenticated }: Props) {
                 </button>
               </span>
             </label>
-            <button className="admin-login-submit" type="submit">
-              Sign in <span aria-hidden="true">↗</span>
+            <button className="admin-login-submit" type="submit" disabled={submitting}>
+              {submitting ? "Signing in…" : "Sign in"} <span aria-hidden="true">↗</span>
             </button>
             {notice && (
               <p className="admin-login-notice" role="status">

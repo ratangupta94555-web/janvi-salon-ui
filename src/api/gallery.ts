@@ -58,7 +58,6 @@ export const galleryApi = {
     images: File[],
     video: File | null,
     category: GalleryCategory,
-    adminToken: string,
   ) => {
     const body = new FormData();
     images.forEach((image) => body.append("images", image));
@@ -69,10 +68,10 @@ export const galleryApi = {
       "/api/gallery/admin/upload",
       {
         method: "POST",
-        headers: { "X-Gallery-Admin-Token": adminToken },
+        headers: { "X-Admin-Request": "true" },
         body,
       },
-      { allowRawArray: true },
+      { allowRawArray: true, credentials: "include" },
     );
   },
 };

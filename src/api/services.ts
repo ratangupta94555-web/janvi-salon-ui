@@ -61,11 +61,15 @@ export class ApiRequestError extends Error {
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
-  options: { allowRawArray?: boolean; allowRawObject?: boolean } = {},
+  options: {
+    allowRawArray?: boolean;
+    allowRawObject?: boolean;
+    credentials?: RequestCredentials;
+  } = {},
 ): Promise<T> {
   const response = await fetch(`${baseURL}${path}`, {
     ...init,
-    credentials: "omit",
+    credentials: options.credentials ?? "omit",
     headers: {
       Accept: "application/json",
       ...(init.body && !(init.body instanceof FormData)
@@ -124,6 +128,25 @@ export async function apiRequest<T>(
 }
 
 const jsonBody = (value: unknown): string => JSON.stringify(value);
+
+export const adminApi = {
+  login: (username: string, password: string) =>
+    apiRequest<void>(
+      "/api/admin/login",
+      {
+        method: "POST",
+        body: jsonBody({ username, password }),
+      },
+      { credentials: "include" },
+    ),
+
+  logout: () =>
+    apiRequest<void>(
+      "/api/admin/logout",
+      { method: "POST" },
+      { credentials: "include" },
+    ),
+};
 
 export const serviceApi = {
   list: (signal?: AbortSignal) =>

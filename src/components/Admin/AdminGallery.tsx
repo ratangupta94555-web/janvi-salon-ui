@@ -11,12 +11,15 @@ import "./AdminGallery.css";
 
 const categories: GalleryCategory[] = ["Makeup", "Hair", "Bridal", "Studio"];
 
-export default function AdminGallery() {
+type AdminGalleryProps = {
+  view: "photos" | "videos";
+};
+
+export default function AdminGallery({ view }: AdminGalleryProps) {
   const [media, setMedia] = useState<GalleryMedia[]>([]);
   const [images, setImages] = useState<File[]>([]);
   const [video, setVideo] = useState<File | null>(null);
   const [category, setCategory] = useState<GalleryCategory>("Makeup");
-  const [adminToken, setAdminToken] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -48,6 +51,15 @@ export default function AdminGallery() {
     return () => controller.abort();
   }, [reload]);
 
+  useEffect(() => {
+    setImages([]);
+    setVideo(null);
+    setUploadError("");
+    setNotice("");
+    if (imageInput.current) imageInput.current.value = "";
+    if (videoInput.current) videoInput.current.value = "";
+  }, [view]);
+
   const selectImages = (files: File[]) => {
     if (files.length > MAX_GALLERY_IMAGES_PER_UPLOAD) {
       setImages([]);
@@ -63,13 +75,14 @@ export default function AdminGallery() {
   const submitUpload = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setNotice("");
-    const validationError = validateGallerySelection(images, video ? [video] : []);
+    const uploadImages = view === "photos" ? images : [];
+    const uploadVideo = view === "videos" ? video : null;
+    const validationError = validateGallerySelection(
+      uploadImages,
+      uploadVideo ? [uploadVideo] : [],
+    );
     if (validationError) {
       setUploadError(validationError);
-      return;
-    }
-    if (!adminToken.trim()) {
-      setUploadError("Enter the gallery admin token configured on the backend.");
       return;
     }
 
@@ -77,17 +90,18 @@ export default function AdminGallery() {
     setUploadError("");
     try {
       const uploaded = await galleryApi.upload(
-        images,
-        video,
+        uploadImages,
+        uploadVideo,
         category,
-        adminToken.trim(),
       );
       setMedia((current) => [...uploaded, ...current]);
       setImages([]);
       setVideo(null);
       if (imageInput.current) imageInput.current.value = "";
       if (videoInput.current) videoInput.current.value = "";
-      setNotice(`${uploaded.length} file${uploaded.length === 1 ? "" : "s"} uploaded to Cloudinary and added to the gallery.`);
+      setNotice(
+        `${uploaded.length} ${view === "photos" ? "photo" : "video"}${uploaded.length === 1 ? "" : "s"} uploaded to Cloudinary and added to the gallery.`,
+      );
     } catch (error) {
       setReload((current) => current + 1);
       setUploadError(
@@ -97,6 +111,10 @@ export default function AdminGallery() {
       setUploading(false);
     }
   };
+  const visibleMedia = media.filter((item) =>
+    view === "photos" ? item.mediaType === "IMAGE" : item.mediaType === "VIDEO",
+  );
+  const selectedMediaCount = view === "photos" ? images.length : video ? 1 : 0;
 
   return (
     <section className="admin-gallery">
@@ -104,32 +122,19 @@ export default function AdminGallery() {
         <div className="admin-gallery-heading">
           <div>
             <span className="admin-gallery-kicker">CLOUDINARY MEDIA</span>
-            <h2>Upload to your gallery</h2>
+            <h2>Upload {view === "photos" ? "photos" : "videos"}</h2>
             <p>
-              Add up to 5 images and 1 video in one upload. New media appears
-              on the public Gallery page after upload.
+              {view === "photos"
+                ? "Choose up to 5 photos for your public gallery."
+                : "Choose one video for your public gallery."}
             </p>
           </div>
-          <span className="admin-gallery-limit">5 images · 1 video</span>
+          <span className="admin-gallery-limit">
+            {view === "photos" ? "Up to 5 photos · 10 MB each" : "1 video · up to 100 MB"}
+          </span>
         </div>
 
         <form className="admin-gallery-form" onSubmit={submitUpload}>
-          <label className="admin-gallery-field">
-            Gallery admin token
-            <input
-              type="password"
-              autoComplete="off"
-              value={adminToken}
-              onChange={(event) => setAdminToken(event.target.value)}
-              placeholder="Enter the token configured on the backend"
-              required
-            />
-            <small>
-              Set <code>CLOUDINARY_ADMIN_TOKEN</code> on the backend. This value is
-              only kept in this page’s memory.
-            </small>
-          </label>
-
           <label className="admin-gallery-field">
             Category
             <select
@@ -150,49 +155,54 @@ export default function AdminGallery() {
           </label>
 
           <div className="admin-gallery-file-fields">
-            <label className="admin-gallery-field">
-              Images <span>Up to 5 · 10 MB each</span>
-              <input
-                ref={imageInput}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(event) =>
-                  selectImages(Array.from(event.currentTarget.files ?? []))
-                }
-              />
-              <small>
-                {images.length
-                  ? `${images.length} image${images.length === 1 ? "" : "s"} selected`
-                  : "JPG, PNG, WebP or another supported image format"}
-              </small>
-            </label>
-            <label className="admin-gallery-field">
-              Video <span>One · 100 MB max</span>
-              <input
-                ref={videoInput}
-                type="file"
-                accept="video/*"
-                onChange={(event) => {
-                  setVideo(event.currentTarget.files?.[0] ?? null);
-                  setUploadError("");
-                  setNotice("");
-                }}
-              />
-              <small>{video?.name ?? "MP4, MOV or another supported video format"}</small>
-            </label>
+            {view === "photos" ? (
+              <label className="admin-gallery-field">
+                Choose photos <span>Up to 5 · 10 MB each</span>
+                <input
+                  ref={imageInput}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(event) =>
+                    selectImages(Array.from(event.currentTarget.files ?? []))
+                  }
+                />
+                <small>
+                  {images.length
+                    ? `${images.length} photo${images.length === 1 ? "" : "s"} selected`
+                    : "JPG, PNG, WebP or another supported image format"}
+                </small>
+              </label>
+            ) : (
+              <label className="admin-gallery-field">
+                Choose a video <span>One · 100 MB max</span>
+                <input
+                  ref={videoInput}
+                  type="file"
+                  accept="video/*"
+                  onChange={(event) => {
+                    setVideo(event.currentTarget.files?.[0] ?? null);
+                    setUploadError("");
+                    setNotice("");
+                  }}
+                />
+                <small>
+                  {video?.name ?? "MP4, MOV or another supported video format"}
+                </small>
+              </label>
+            )}
           </div>
 
-          {(images.length > 0 || video) && (
+          {selectedMediaCount > 0 && (
             <ul className="admin-gallery-selected">
-              {images.map((image, index) => (
+              {view === "photos" && images.map((image, index) => (
                 <li key={`${image.name}-${image.lastModified}-${index}`}>
-                  <span>Image</span>
+                  <span>Photo</span>
                   {image.name}
                   <small>{(image.size / (1024 * 1024)).toFixed(1)} MB</small>
                 </li>
               ))}
-              {video && (
+              {view === "videos" && video && (
                 <li>
                   <span>Video</span>
                   {video.name}
@@ -216,9 +226,11 @@ export default function AdminGallery() {
           <button
             className="primary-button"
             type="submit"
-            disabled={uploading || !adminToken.trim()}
+            disabled={uploading || selectedMediaCount === 0}
           >
-            {uploading ? "Uploading…" : "Upload selected media"}
+            {uploading
+              ? "Uploading…"
+              : `Upload ${view === "photos" ? "photos" : "video"}`}
           </button>
         </form>
       </div>
@@ -227,8 +239,11 @@ export default function AdminGallery() {
         <div className="admin-gallery-heading">
           <div>
             <span className="admin-gallery-kicker">PUBLISHED MEDIA</span>
-            <h2>Gallery items</h2>
-            <p>Media already stored in Cloudinary and shown to visitors.</p>
+            <h2>{view === "photos" ? "Published photos" : "Published videos"}</h2>
+            <p>
+              {visibleMedia.length} {view === "photos" ? "photo" : "video"}
+              {visibleMedia.length === 1 ? "" : "s"} stored in Cloudinary.
+            </p>
           </div>
           <button
             className="admin-gallery-refresh"
@@ -245,9 +260,9 @@ export default function AdminGallery() {
           <div className="admin-gallery-message error" role="alert">
             {loadError}
           </div>
-        ) : media.length ? (
+        ) : visibleMedia.length ? (
           <div className="admin-gallery-media-grid">
-            {media.map((item) => (
+            {visibleMedia.map((item) => (
               <article className="admin-gallery-media-card" key={item.id}>
                 {item.mediaType === "VIDEO" ? (
                   <video src={item.secureUrl} controls preload="metadata" />
@@ -263,7 +278,7 @@ export default function AdminGallery() {
           </div>
         ) : (
           <p className="admin-gallery-empty">
-            No Cloudinary media has been uploaded yet.
+            No {view === "photos" ? "photos" : "videos"} have been uploaded yet.
           </p>
         )}
       </div>

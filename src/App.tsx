@@ -9,6 +9,7 @@ import ServicesPage from "./pages/ServicesPage";
 import GalleryPage from "./pages/GalleryPage";
 import ContactPage from "./pages/ContactPage";
 import FAQPage from "./pages/FAQPage";
+import { adminApi } from "./api/services";
 
 const ADMIN_SESSION_KEY = "janvi-admin-session";
 
@@ -35,7 +36,17 @@ function App() {
     window.history.replaceState({}, "", target);
     setPath(target);
   };
-  const logoutAdmin = () => {
+  const logoutAdmin = async () => {
+    try {
+      await adminApi.logout();
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? `Sign-out could not be completed: ${error.message}`
+          : "Sign-out could not be completed. Please try again.",
+      );
+      return;
+    }
     window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
     setAdminAuthenticated(false);
     window.history.replaceState({}, "", "/login");

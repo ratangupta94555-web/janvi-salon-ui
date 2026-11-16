@@ -45,7 +45,8 @@ type IconName =
   | "eye"
   | "menu"
   | "gallery"
-  | "logout";
+  | "logout"
+  | "location";
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const common = {
     width: size,
@@ -151,6 +152,12 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
         <path d="M12 3h6a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-6" />
       </>
     ),
+    location: (
+      <>
+        <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </>
+    ),
   };
   return <svg {...common}>{shapes[name]}</svg>;
 }
@@ -175,10 +182,16 @@ const adminPagePaths: Record<string, string> = {
   Clients: "/admin/clients",
   Services: "/admin/services",
   Treatments: "/admin/treatments",
-  Gallery: "/admin/gallery",
+  Gallery: "/admin/gallery/photos",
+  Photos: "/admin/gallery/photos",
+  Videos: "/admin/gallery/videos",
 };
 
 function pageFromPath(pathname: string): string {
+  if (pathname === "/admin/gallery" || pathname === "/admin/gallery/photos") {
+    return "Photos";
+  }
+  if (pathname === "/admin/gallery/videos") return "Videos";
   return (
     Object.entries(adminPagePaths).find(([, path]) => path === pathname)?.[0] ??
     "Dashboard"
@@ -456,6 +469,15 @@ function AdminDashboard({
       `Appointment #${item.id}`,
     [],
   );
+  const appointmentLocation = useCallback(
+    (item: Appointment) =>
+      item.locationName ||
+      bookingLocations.find(
+        (location) => location.locationId === item.locationId,
+      )?.name ||
+      "Location not specified",
+    [bookingLocations],
+  );
   const appointmentServices = useCallback(
     (item: Appointment) =>
       item.items?.map((service) => service.subServiceName).join(", ") ||
@@ -488,11 +510,11 @@ function AdminDashboard({
   const filteredAppointments = useMemo(
     () =>
       appointments.filter((item) =>
-        `${appointmentName(item)} ${appointmentServices(item)} ${item.customer?.phone ?? item.phone ?? ""}`
+        `${appointmentName(item)} ${appointmentLocation(item)} ${appointmentServices(item)} ${item.customer?.phone ?? item.phone ?? ""}`
           .toLowerCase()
           .includes(query.toLowerCase()),
       ),
-    [appointments, appointmentName, appointmentServices, query],
+    [appointments, appointmentLocation, appointmentName, appointmentServices, query],
   );
   const appointmentPageCount = Math.max(
     1,
@@ -643,6 +665,47 @@ function AdminDashboard({
   const dashboardRecentActiveAppointments = dashboardActiveAppointments.filter(
     (item) => dashboardRecentDateKeySet.has(item.appointmentDate),
   );
+  const dashboardBookedTotal = dashboardRecentActiveAppointments.reduce(
+    (total, item) => total + appointmentBookedValue(item),
+    0,
+  );
+  const dashboardLocationCollections = bookingLocations.map((location) => {
+    const locationAppointments = dashboardRecentActiveAppointments.filter(
+      (item) =>
+        item.locationId === location.locationId ||
+        (!item.locationId && item.locationName === location.name),
+    );
+    return {
+      key: location.locationId,
+      name: location.name,
+      address: location.address,
+      appointmentCount: locationAppointments.length,
+      amount: locationAppointments.reduce(
+        (total, item) => total + appointmentBookedValue(item),
+        0,
+      ),
+    };
+  });
+  const unassignedAppointments = dashboardRecentActiveAppointments.filter(
+    (item) =>
+      !bookingLocations.some(
+        (location) =>
+          item.locationId === location.locationId ||
+          (!item.locationId && item.locationName === location.name),
+      ),
+  );
+  if (unassignedAppointments.length) {
+    dashboardLocationCollections.push({
+      key: "unknown",
+      name: "Location not specified",
+      address: "Studio location is unavailable for these bookings",
+      appointmentCount: unassignedAppointments.length,
+      amount: unassignedAppointments.reduce(
+        (total, item) => total + appointmentBookedValue(item),
+        0,
+      ),
+    });
+  }
   const dashboardTodayAppointments = dashboardActiveAppointments.filter(
     (item) => item.appointmentDate === dashboardToday,
   );
@@ -763,17 +826,46 @@ function AdminDashboard({
         <div className="nav-label">MENU</div>
         <nav className="side-nav">
           {navItems.map((item) => (
-            <button
-              key={item.label}
-              className={`nav-item ${page === item.label ? "active" : ""}`}
-              onClick={() => selectPage(item.label)}
-            >
-              <Icon name={item.icon} />
-              <span>{item.label}</span>
-              {item.label === "Appointments" && (
-                <span className="nav-count">{appointments.length}</span>
+            <React.Fragment key={item.label}>
+              <button
+                className={`nav-item ${
+                  page === item.label ||
+                  (item.label === "Gallery" &&
+                    (page === "Photos" || page === "Videos"))
+                    ? "active"
+                    : ""
+                }`}
+                onClick={() => selectPage(item.label)}
+                aria-expanded={
+                  item.label === "Gallery"
+                    ? page === "Photos" || page === "Videos"
+                    : undefined
+                }
+              >
+                <Icon name={item.icon} />
+                <span>{item.label}</span>
+                {item.label === "Appointments" && (
+                  <span className="nav-count">{appointments.length}</span>
+                )}
+              </button>
+              {item.label === "Gallery" && (
+                <div className="gallery-subnav" aria-label="Gallery sections">
+                  {(["Photos", "Videos"] as const).map((section) => (
+                    <button
+                      className={`gallery-subnav-item ${
+                        page === section ? "active" : ""
+                      }`}
+                      key={section}
+                      type="button"
+                      onClick={() => selectPage(section)}
+                    >
+                      <span className="gallery-subnav-dot" />
+                      {section}
+                    </button>
+                  ))}
+                </div>
               )}
-            </button>
+            </React.Fragment>
           ))}
         </nav>
         <div className="sidebar-bottom">
@@ -1168,6 +1260,64 @@ function AdminDashboard({
                   </div>
                 </article>
               </section>
+              <section
+                className="location-collections-panel panel"
+                aria-label="Booked amount by studio location"
+              >
+                <div className="location-collections-heading">
+                  <div>
+                    <span className="location-collections-kicker">
+                      LAST 7 DAYS
+                    </span>
+                    <h2>Studio-wise collection</h2>
+                    <p>
+                      Booked appointment value, excluding cancelled and no-show
+                      bookings. This is not a record of payments received.
+                    </p>
+                  </div>
+                  <div className="location-collections-total">
+                    <small>Total booked amount</small>
+                    <strong>{formatPrice(dashboardBookedTotal)}</strong>
+                  </div>
+                </div>
+                <div className="location-collections-list">
+                  {dashboardLocationCollections.map((location) => {
+                    const share =
+                      dashboardBookedTotal > 0
+                        ? (location.amount / dashboardBookedTotal) * 100
+                        : 0;
+                    return (
+                      <article
+                        className="location-collection-card"
+                        key={location.key}
+                      >
+                        <div className="location-collection-icon">
+                          <Icon name="location" size={18} />
+                        </div>
+                        <div className="location-collection-details">
+                          <strong>{location.name}</strong>
+                          <small>
+                            {location.appointmentCount} booking
+                            {location.appointmentCount === 1 ? "" : "s"}
+                            {location.address ? ` · ${location.address}` : ""}
+                          </small>
+                          <span className="location-collection-progress">
+                            <i style={{ width: `${share}%` }} />
+                          </span>
+                        </div>
+                        <strong className="location-collection-amount">
+                          {formatPrice(location.amount)}
+                        </strong>
+                      </article>
+                    );
+                  })}
+                  {!dashboardLocationCollections.length && (
+                    <p className="dashboard-empty">
+                      Studio locations are not available right now.
+                    </p>
+                  )}
+                </div>
+              </section>
             </>
             )
           ) : page === "Services" || page === "Treatments" ? (
@@ -1175,8 +1325,8 @@ function AdminDashboard({
               notify={notify}
               view={page === "Treatments" ? "subServices" : "services"}
             />
-          ) : page === "Gallery" ? (
-            <AdminGallery />
+          ) : page === "Photos" || page === "Videos" ? (
+            <AdminGallery view={page === "Videos" ? "videos" : "photos"} />
           ) : (
             <section className="section-page panel">
               <div className="panel-header">
@@ -1250,6 +1400,7 @@ function AdminDashboard({
                           <tr>
                             <th scope="col">Time</th>
                             <th scope="col">Client</th>
+                            <th scope="col">Studio location</th>
                             <th scope="col">Services</th>
                             <th scope="col">Total</th>
                             <th scope="col">Status</th>
@@ -1299,6 +1450,17 @@ function AdminDashboard({
                                       {item.customer?.phone ?? item.phone}
                                     </small>
                                   )}
+                                </span>
+                              </span>
+                            </td>
+                            <td>
+                              <span className="admin-appointment-location">
+                                <span className="admin-appointment-location-icon">
+                                  <Icon name="location" size={15} />
+                                </span>
+                                <span>
+                                  <strong>{appointmentLocation(item)}</strong>
+                                  <small>{item.locationId ?? "Studio"}</small>
                                 </span>
                               </span>
                             </td>

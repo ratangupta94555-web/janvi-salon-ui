@@ -86,3 +86,30 @@
 .upcoming-appointment-status.confirmed{border-color:#dceee4;background:#f0f8f3;color:#438366}
 .upcoming-appointments-card .dashboard-empty{padding:18px 10px;text-align:center}
 @media(max-width:560px){.dashboard-overview-main .performance-card{padding:16px 13px}.upcoming-appointments-card .panel-header{padding:17px 15px}.upcoming-appointment-list{padding-right:10px;padding-left:10px}.upcoming-appointment-row{gap:8px;padding-inline:5px}.upcoming-appointment-status{padding:4px 6px;font-size:8px}}
+
+.location-collections-panel{padding:21px;border-color:#ece8f2;border-radius:15px;box-shadow:0 8px 24px #37255808}
+.location-collections-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-bottom:17px;border-bottom:1px solid #f0edf3}
+.location-collections-kicker{color:#9476c3;font-size:9px;font-weight:700;letter-spacing:1px}
+.location-collections-heading h2{margin:5px 0 0;color:#302b3a;font:700 15px Manrope,sans-serif}
+.location-collections-heading p{max-width:470px;margin:6px 0 0;color:#8b8797;font-size:10px;line-height:1.55}
+.location-collections-total{flex:none;padding:11px 15px;border:1px solid #e8def3;border-radius:12px;background:linear-gradient(135deg,#faf7fe,#f2ecf9);text-align:right}
+.location-collections-total small,.location-collections-total strong{display:block}
+.location-collections-total small{color:#80758d;font-size:9px}
+.location-collections-total strong{margin-top:4px;color:#614888;font:800 21px Manrope,sans-serif}
+.location-collections-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:15px}
+.location-collection-card{display:flex;min-width:0;align-items:flex-start;gap:10px;padding:13px;border:1px solid #f0edf4;border-radius:12px;background:#fff}
+.location-collection-icon{display:grid;width:34px;height:34px;flex:none;place-items:center;border-radius:10px;background:#f2edf9;color:#8565b4}
+.location-collection-details{display:grid;min-width:0;flex:1;gap:5px}
+.location-collection-details>strong{overflow:hidden;color:#40384a;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.location-collection-details>small{overflow:hidden;color:#938d9b;font-size:9px;text-overflow:ellipsis;white-space:nowrap}
+.location-collection-progress{height:4px;overflow:hidden;border-radius:8px;background:#f0edf4}
+.location-collection-progress i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#9b7bd1,#c8b3e4)}
+.location-collection-amount{flex:none;margin-left:4px;color:#40384a;font:700 12px Manrope,sans-serif}
+@media(max-width:560px){.location-collections-panel{padding:15px 12px}.location-collections-heading{align-items:stretch;flex-direction:column}.location-collections-total{text-align:left}.location-collections-list{grid-template-columns:minmax(0,1fr)}}
+
+.gallery-subnav{display:grid;gap:2px;margin:0 0 5px 40px;padding-left:13px;border-left:1px solid #ece8f0}
+.gallery-subnav-item{display:flex;align-items:center;gap:9px;min-height:32px;padding:0 9px;border:0;border-radius:7px;background:transparent;color:#817d8a;text-align:left;font:500 11px 'DM Sans',sans-serif;cursor:pointer}
+.gallery-subnav-item:hover{background:#faf9fc;color:#5a4c77}
+.gallery-subnav-item.active{background:#f7f4fb;color:#7658b1;font-weight:600}
+.gallery-subnav-dot{width:5px;height:5px;border-radius:50%;background:#c9c2d2}
+.gallery-subnav-item.active .gallery-subnav-dot{background:#896aba;box-shadow:0 0 0 3px #896aba1c}
