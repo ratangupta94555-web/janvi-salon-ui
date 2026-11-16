@@ -37,20 +37,25 @@ function App() {
     setPath(target);
   };
   const logoutAdmin = async () => {
+    let logoutFailed = false;
+    let logoutError: unknown;
     try {
       await adminApi.logout();
     } catch (error) {
-      window.alert(
-        error instanceof Error
-          ? `Sign-out could not be completed: ${error.message}`
-          : "Sign-out could not be completed. Please try again.",
-      );
-      return;
+      logoutFailed = true;
+      logoutError = error;
     }
     window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
     setAdminAuthenticated(false);
     window.history.replaceState({}, "", "/login");
     setPath("/login");
+    if (logoutFailed) {
+      window.alert(
+        logoutError instanceof Error
+          ? `Signed out of this browser, but server sign-out could not be confirmed: ${logoutError.message}`
+          : "Signed out of this browser, but server sign-out could not be confirmed.",
+      );
+    }
   };
   useEffect(() => {
     const onPop = () => setPath(normalizePath(window.location.pathname));
