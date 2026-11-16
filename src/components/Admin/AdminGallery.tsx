@@ -4,12 +4,16 @@ import {
   GalleryMedia,
   galleryApi,
   MAX_GALLERY_IMAGES_PER_UPLOAD,
+  MAX_GALLERY_VIDEO_BYTES,
+  MAX_GALLERY_VIDEOS_TOTAL,
   validateGallerySelection,
 } from "../../api/gallery";
 import BrandLoader from "../common/BrandLoader";
+import AdminPagination from "./AdminPagination";
 import "./AdminGallery.css";
 
 const categories: GalleryCategory[] = ["Makeup", "Hair", "Bridal", "Studio"];
+const MEDIA_PAGE_SIZE = 12;
 
 type AdminGalleryProps = {
   view: "photos" | "videos";
@@ -27,6 +31,8 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
   const [uploadError, setUploadError] = useState("");
   const [notice, setNotice] = useState("");
   const [deletingMediaId, setDeletingMediaId] = useState<number | null>(null);
+  const [videoLimitModalOpen, setVideoLimitModalOpen] = useState(false);
+  const [mediaPage, setMediaPage] = useState(1);
   const [reload, setReload] = useState(0);
   const imageInput = useRef<HTMLInputElement>(null);
   const videoInput = useRef<HTMLInputElement>(null);
@@ -56,6 +62,7 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
   useEffect(() => {
     setImages([]);
     setVideo(null);
+    setMediaPage(1);
     setUploadError("");
     setNotice("");
     if (imageInput.current) imageInput.current.value = "";
@@ -79,12 +86,20 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
     setNotice("");
     const uploadImages = view === "photos" ? images : [];
     const uploadVideo = view === "videos" ? video : null;
+    const existingVideoCount = media.filter(
+      (item) => item.mediaType === "VIDEO",
+    ).length;
     const validationError = validateGallerySelection(
       uploadImages,
       uploadVideo ? [uploadVideo] : [],
+      existingVideoCount,
     );
     if (validationError) {
-      setUploadError(validationError);
+      if (validationError.startsWith("Only 10 videos")) {
+        setVideoLimitModalOpen(true);
+      } else {
+        setUploadError(validationError);
+      }
       return;
     }
 
@@ -97,6 +112,7 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
         category,
       );
       setMedia((current) => [...uploaded, ...current]);
+      setMediaPage(1);
       setImages([]);
       setVideo(null);
       if (imageInput.current) imageInput.current.value = "";
@@ -106,9 +122,13 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
       );
     } catch (error) {
       setReload((current) => current + 1);
-      setUploadError(
-        error instanceof Error ? error.message : "The files could not be uploaded.",
-      );
+      const message =
+        error instanceof Error ? error.message : "The files could not be uploaded.";
+      if (message.startsWith("Only 10 videos")) {
+        setVideoLimitModalOpen(true);
+      } else {
+        setUploadError(message);
+      }
     } finally {
       setUploading(false);
     }
@@ -140,6 +160,15 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
   const visibleMedia = media.filter((item) =>
     view === "photos" ? item.mediaType === "IMAGE" : item.mediaType === "VIDEO",
   );
+  const mediaPageCount = Math.max(
+    1,
+    Math.ceil(visibleMedia.length / MEDIA_PAGE_SIZE),
+  );
+  const currentMediaPage = Math.min(mediaPage, mediaPageCount);
+  const paginatedMedia = visibleMedia.slice(
+    (currentMediaPage - 1) * MEDIA_PAGE_SIZE,
+    currentMediaPage * MEDIA_PAGE_SIZE,
+  );
   const selectedMediaCount = view === "photos" ? images.length : video ? 1 : 0;
 
   return (
@@ -152,11 +181,13 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
             <p>
               {view === "photos"
                 ? "Choose up to 5 photos for your public gallery."
-                : "Choose one video for your public gallery."}
+                : `Choose one video. The gallery holds up to ${MAX_GALLERY_VIDEOS_TOTAL} videos.`}
             </p>
           </div>
           <span className="admin-gallery-limit">
-            {view === "photos" ? "Up to 5 photos · 10 MB each" : "1 video · up to 100 MB"}
+            {view === "photos"
+              ? "Up to 5 photos · 10 MB each"
+              : `Up to ${MAX_GALLERY_VIDEOS_TOTAL} videos · 50 MB each`}
           </span>
         </div>
 
@@ -201,7 +232,11 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
               </label>
             ) : (
               <label className="admin-gallery-field">
-                Choose a video <span>One · 100 MB max</span>
+                Choose a video{" "}
+                <span>
+                  {MAX_GALLERY_VIDEO_BYTES / (1024 * 1024)} MB max · 10 videos
+                  total
+                </span>
                 <input
                   ref={videoInput}
                   type="file"
@@ -210,6 +245,12 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
                     setVideo(event.currentTarget.files?.[0] ?? null);
                     setUploadError("");
                     setNotice("");
+                    if (
+                      media.filter((item) => item.mediaType === "VIDEO").length >=
+                      MAX_GALLERY_VIDEOS_TOTAL
+                    ) {
+                      setVideoLimitModalOpen(true);
+                    }
                   }}
                 />
                 <small>
@@ -288,7 +329,7 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
           </div>
         ) : visibleMedia.length ? (
           <div className="admin-gallery-media-grid">
-            {visibleMedia.map((item) => (
+            {paginatedMedia.map((item) => (
               <article className="admin-gallery-media-card" key={item.id}>
                 {item.mediaType === "VIDEO" ? (
                   <video src={item.secureUrl} controls preload="metadata" />
@@ -315,7 +356,55 @@ export default function AdminGallery({ view, notify }: AdminGalleryProps) {
             No {view === "photos" ? "photos" : "videos"} have been uploaded yet.
           </p>
         )}
+        {!loading && !loadError && visibleMedia.length > 0 && (
+          <AdminPagination
+            currentPage={currentMediaPage}
+            pageSize={MEDIA_PAGE_SIZE}
+            totalItems={visibleMedia.length}
+            itemLabel={view === "photos" ? "photos" : "videos"}
+            onPageChange={setMediaPage}
+          />
+        )}
       </div>
+      {videoLimitModalOpen && (
+        <div
+          className="admin-gallery-limit-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setVideoLimitModalOpen(false);
+            }
+          }}
+        >
+          <section
+            className="admin-gallery-limit-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gallery-video-limit-title"
+          >
+            <span className="admin-gallery-limit-icon" aria-hidden="true">
+              !
+            </span>
+            <span className="admin-gallery-kicker">GALLERY VIDEO LIMIT</span>
+            <h2 id="gallery-video-limit-title">Your video collection is full</h2>
+            <p>
+              Only {MAX_GALLERY_VIDEOS_TOTAL} videos can be stored in the
+              gallery. Delete an existing video before uploading another.
+            </p>
+            <small>
+              {media.filter((item) => item.mediaType === "VIDEO").length} of{" "}
+              {MAX_GALLERY_VIDEOS_TOTAL} videos currently stored
+            </small>
+            <button
+              className="admin-gallery-limit-dismiss"
+              type="button"
+              onClick={() => setVideoLimitModalOpen(false)}
+            >
+              Got it
+            </button>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

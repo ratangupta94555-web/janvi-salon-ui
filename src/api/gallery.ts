@@ -15,12 +15,14 @@ export type GalleryCategory = "Makeup" | "Hair" | "Bridal" | "Studio";
 
 export const MAX_GALLERY_IMAGES_PER_UPLOAD = 5;
 export const MAX_GALLERY_VIDEOS_PER_UPLOAD = 1;
+export const MAX_GALLERY_VIDEOS_TOTAL = 10;
 export const MAX_GALLERY_IMAGE_BYTES = 10 * 1024 * 1024;
-export const MAX_GALLERY_VIDEO_BYTES = 100 * 1024 * 1024;
+export const MAX_GALLERY_VIDEO_BYTES = 50 * 1024 * 1024;
 
 export function validateGallerySelection(
   images: File[],
   videos: File[],
+  existingVideoCount = 0,
 ): string | undefined {
   if (images.length > MAX_GALLERY_IMAGES_PER_UPLOAD) {
     return "Select no more than 5 images at a time.";
@@ -34,11 +36,14 @@ export function validateGallerySelection(
   if (videos.length > MAX_GALLERY_VIDEOS_PER_UPLOAD) {
     return "Select no more than 1 video at a time.";
   }
+  if (existingVideoCount + videos.length > MAX_GALLERY_VIDEOS_TOTAL) {
+    return "Only 10 videos can be stored in the gallery. Delete an existing video before uploading another.";
+  }
   if (videos.some((video) => !video.type.startsWith("video/"))) {
     return "Select a valid video file.";
   }
   if (videos.some((video) => video.size > MAX_GALLERY_VIDEO_BYTES)) {
-    return "The video must be 100 MB or smaller.";
+    return "The video must be 50 MB or smaller.";
   }
   if (!images.length && !videos.length) {
     return "Choose at least one image or a video to upload.";
