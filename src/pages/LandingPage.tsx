@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from "react";
 import "./CustomerPages.css";
 import StudioHighlights from "../components/common/StudioHighlights";
+import { GalleryMedia, galleryApi } from "../api/gallery";
 
 type Props = { navigate: (to: string) => void };
+type HomeGalleryPhoto = {
+  category: string;
+  image: string;
+  alt: string;
+};
 const testimonials = [
   {
     quote:
@@ -30,33 +36,6 @@ const heroImages = [
   "/images/janvi-hero-editorial-01.png",
   "/images/janvi-hero-editorial-02.png",
   "/images/janvi-hero-editorial-03.png",
-];
-const galleryPhotos = [
-  {
-    category: "Bridal Makeup",
-    image: "/images/janvi-bridal-makeup.jpeg",
-    alt: "Janvi applying bridal makeup to a client",
-  },
-  {
-    category: "Artist at Work",
-    image: "/images/janvi-makeup-action.jpeg",
-    alt: "Janvi applying makeup with a brush",
-  },
-  {
-    category: "Hair Styling",
-    image: "/images/janvi-hair-styling.jpeg",
-    alt: "Janvi styling a client’s hair",
-  },
-  {
-    category: "Makeup Artistry",
-    image: "/images/janvi-makeup-portrait.jpeg",
-    alt: "Janvi with her makeup brush",
-  },
-  {
-    category: "A Special Finish",
-    image: "/images/janvi-bridal-finish.jpeg",
-    alt: "Bridal makeup by Janvi",
-  },
 ];
 
 function RitualArtwork({
@@ -166,6 +145,46 @@ export default function LandingPage({ navigate }: Props) {
   const [heroIndex, setHeroIndex] = useState(0);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [uploadedGalleryPhotos, setUploadedGalleryPhotos] = useState<
+    HomeGalleryPhoto[]
+  >([]);
+  const [galleryLoadError, setGalleryLoadError] = useState("");
+  const [galleryLoading, setGalleryLoading] = useState(true);
+  const [galleryReload, setGalleryReload] = useState(0);
+  const galleryPhotos = uploadedGalleryPhotos;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setGalleryLoading(true);
+    setGalleryLoadError("");
+    galleryApi
+      .list(controller.signal)
+      .then((items) => {
+        if (controller.signal.aborted) return;
+        const photos = items
+          .filter((item) => item.mediaType === "IMAGE")
+          .map((item: GalleryMedia) => ({
+            category: item.category || "Studio",
+            image: item.secureUrl,
+            alt: `Uploaded ${item.category || "studio"} look at Janvi Makeover`,
+          }));
+        setUploadedGalleryPhotos(photos);
+        setGalleryIndex(0);
+        setGalleryLoading(false);
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setGalleryLoadError(
+            error instanceof Error
+              ? error.message
+              : "Gallery photos could not be loaded.",
+          );
+          setGalleryLoading(false);
+        }
+      });
+    return () => controller.abort();
+  }, [galleryReload]);
+
   useEffect(() => {
     if (
       window.matchMedia &&
@@ -196,18 +215,19 @@ export default function LandingPage({ navigate }: Props) {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     )
       return undefined;
+    if (galleryPhotos.length < 2) return undefined;
     const timer = window.setInterval(
       () => setGalleryIndex((index) => (index + 1) % galleryPhotos.length),
       4500,
     );
     return () => window.clearInterval(timer);
-  }, []);
+  }, [galleryPhotos.length]);
   const showTestimonial = (index: number) =>
     setTestimonialIndex((index + testimonials.length) % testimonials.length);
   const showGallerySlide = (index: number) =>
     setGalleryIndex((index + galleryPhotos.length) % galleryPhotos.length);
   const visibleGalleryPhotos = Array.from(
-    { length: 3 },
+    { length: Math.min(3, galleryPhotos.length) },
     (_, offset) =>
       galleryPhotos[(galleryIndex + offset) % galleryPhotos.length],
   );
@@ -440,54 +460,121 @@ export default function LandingPage({ navigate }: Props) {
             Explore the gallery <span>↗</span>
           </button>
         </div>
-        <div className="home-gallery-track">
-          {visibleGalleryPhotos.map((photo, index) => (
-            <button
-              className="home-gallery-card"
-              key={photo.image}
-              onClick={() => navigate("/gallery")}
-              aria-label={`View ${photo.category} in the full gallery`}
-            >
-              <img src={photo.image} alt={photo.alt} />
-              <span className="home-gallery-caption">
-                <small>JANVI MAKEOVER</small>
-                <strong>{photo.category}</strong>
-              </span>
-              <span className="home-gallery-number">
-                0{((galleryIndex + index) % galleryPhotos.length) + 1}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="home-gallery-controls">
-          <div className="gallery-dots" aria-label="Choose gallery slide">
-            {galleryPhotos.map((photo, index) => (
-              <button
-                key={photo.image}
-                className={index === galleryIndex ? "active" : ""}
-                aria-label={`Show gallery slide ${index + 1}`}
-                aria-pressed={index === galleryIndex}
-                onClick={() => showGallerySlide(index)}
-              />
-            ))}
+        {galleryLoading && galleryPhotos.length === 0 ? (
+          <div className="home-gallery-empty is-loading" role="status">
+            <span className="home-gallery-empty-art" aria-hidden="true">
+              <span />
+            </span>
+            <div className="home-gallery-empty-copy">
+              <span>JUST A MOMENT</span>
+              <h3>Gathering the latest studio looks.</h3>
+              <p>Our newest gallery moments are on their way.</p>
+            </div>
           </div>
-          <div className="gallery-arrows">
+        ) : galleryPhotos.length > 0 ? (
+          <>
+            {galleryLoadError && (
+              <p className="home-gallery-status" role="status">
+                Latest gallery photos could not be refreshed ({galleryLoadError}).
+                Showing the photos already available.
+                <button
+                  type="button"
+                  onClick={() => setGalleryReload((value) => value + 1)}
+                >
+                  Try again
+                </button>
+              </p>
+            )}
+            <div className="home-gallery-track">
+              {visibleGalleryPhotos.map((photo, index) => (
+                <button
+                  className="home-gallery-card"
+                  key={photo.image}
+                  onClick={() => navigate("/gallery")}
+                  aria-label={`View ${photo.category} in the full gallery`}
+                >
+                  <img src={photo.image} alt={photo.alt} />
+                  <span className="home-gallery-caption">
+                    <small>JANVI MAKEOVER</small>
+                    <strong>{photo.category}</strong>
+                  </span>
+                  <span className="home-gallery-number">
+                    {String(
+                      ((galleryIndex + index) % galleryPhotos.length) + 1,
+                    ).padStart(2, "0")}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {galleryPhotos.length > 1 && (
+              <div className="home-gallery-controls">
+                <div className="gallery-dots" aria-label="Choose gallery slide">
+                  {galleryPhotos.map((photo, index) => (
+                    <button
+                      key={photo.image}
+                      className={index === galleryIndex ? "active" : ""}
+                      aria-label={`Show gallery slide ${index + 1}`}
+                      aria-pressed={index === galleryIndex}
+                      onClick={() => showGallerySlide(index)}
+                    />
+                  ))}
+                </div>
+                <div className="gallery-arrows">
+                  <button
+                    className="testimonial-arrow"
+                    aria-label="Previous gallery images"
+                    onClick={() => showGallerySlide(galleryIndex - 1)}
+                  >
+                    ←
+                  </button>
+                  <button
+                    className="testimonial-arrow"
+                    aria-label="Next gallery images"
+                    onClick={() => showGallerySlide(galleryIndex + 1)}
+                  >
+                    →
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="home-gallery-empty" role="status">
+            <span className="home-gallery-empty-art" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none">
+                <rect x="10" y="15" width="44" height="36" rx="5" />
+                <circle cx="25" cy="27" r="4" />
+                <path d="m15 46 12-12 8 8 6-6 8 10" />
+                <path d="m48 8 1.5 4.5L54 14l-4.5 1.5L48 20l-1.5-4.5L42 14l4.5-1.5L48 8Z" />
+              </svg>
+            </span>
+            <div className="home-gallery-empty-copy">
+              <span>{galleryLoadError ? "A LITTLE PAUSE" : "THE GALLERY IS BLOOMING"}</span>
+              <h3>
+                {galleryLoadError
+                  ? "Our latest studio looks aren’t available right now."
+                  : "A new studio moment is on its way."}
+              </h3>
+              <p>
+                {galleryLoadError
+                  ? `Gallery photos could not be loaded: ${galleryLoadError}`
+                  : "We’re getting our latest looks ready to share. Check back soon, or come create a moment of your own."}
+              </p>
+            </div>
             <button
-              className="testimonial-arrow"
-              aria-label="Previous gallery images"
-              onClick={() => showGallerySlide(galleryIndex - 1)}
+              className="home-gallery-empty-action"
+              type="button"
+              onClick={() =>
+                galleryLoadError
+                  ? setGalleryReload((value) => value + 1)
+                  : navigate("/appointments")
+              }
             >
-              ←
-            </button>
-            <button
-              className="testimonial-arrow"
-              aria-label="Next gallery images"
-              onClick={() => showGallerySlide(galleryIndex + 1)}
-            >
-              →
+              {galleryLoadError ? "Try again" : "Book your visit"}
+              <span aria-hidden="true">↗</span>
             </button>
           </div>
-        </div>
+        )}
       </section>
 
       <section
