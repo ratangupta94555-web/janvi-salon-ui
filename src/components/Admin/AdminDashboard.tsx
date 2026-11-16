@@ -293,6 +293,8 @@ function AdminDashboard({
     useState<number | null>(null);
   const [appointmentDeletingId, setAppointmentDeletingId] =
     useState<number | null>(null);
+  const [appointmentDeleteTarget, setAppointmentDeleteTarget] =
+    useState<Appointment | null>(null);
   const [detailsAppointment, setDetailsAppointment] =
     useState<Appointment | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -666,16 +668,9 @@ function AdminDashboard({
       setAppointmentStatusUpdatingId(null);
     }
   };
-  const deleteAppointment = async (appointment: Appointment) => {
-    const customerName = appointmentName(appointment);
-    if (
-      !window.confirm(
-        `Permanently delete ${customerName}'s appointment #${appointment.id}? This cannot be undone.`,
-      )
-    ) {
-      return;
-    }
-
+  const deleteAppointment = async () => {
+    if (!appointmentDeleteTarget) return;
+    const appointment = appointmentDeleteTarget;
     setAppointmentDeletingId(appointment.id);
     try {
       await appointmentApi.delete(appointment.id);
@@ -684,8 +679,10 @@ function AdminDashboard({
         setDetailsError("");
       }
       setAppointmentsReload((current) => current + 1);
+      setAppointmentDeleteTarget(null);
       notify("Appointment permanently deleted.");
     } catch (error) {
+      setAppointmentDeleteTarget(null);
       notify(
         error instanceof Error
           ? error.message
@@ -1574,7 +1571,7 @@ function AdminDashboard({
                                 aria-label={`Permanently delete appointment for ${customerName}`}
                                 title="Permanently delete appointment"
                                 disabled={appointmentDeletingId === item.id}
-                                onClick={() => void deleteAppointment(item)}
+                                onClick={() => setAppointmentDeleteTarget(item)}
                               >
                                 <Icon name="trash" size={16} />
                               </button>
@@ -2039,6 +2036,60 @@ function AdminDashboard({
               </button>
             </div>
           </form>
+        </div>
+      )}
+      {appointmentDeleteTarget && (
+        <div
+          className="admin-appointment-delete-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              appointmentDeletingId === null
+            ) {
+              setAppointmentDeleteTarget(null);
+            }
+          }}
+        >
+          <section
+            className="admin-appointment-delete-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="appointment-delete-title"
+            aria-describedby="appointment-delete-description"
+          >
+            <span className="admin-appointment-delete-icon" aria-hidden="true">
+              !
+            </span>
+            <span className="admin-appointment-delete-kicker">
+              CONFIRM DELETION
+            </span>
+            <h2 id="appointment-delete-title">Delete this appointment?</h2>
+            <p id="appointment-delete-description">
+              {appointmentName(appointmentDeleteTarget)}’s appointment #
+              {appointmentDeleteTarget.id} will be permanently deleted. This
+              action cannot be undone.
+            </p>
+            <div className="admin-appointment-delete-actions">
+              <button
+                type="button"
+                disabled={appointmentDeletingId !== null}
+                onClick={() => setAppointmentDeleteTarget(null)}
+              >
+                Keep appointment
+              </button>
+              <button
+                className="admin-appointment-delete-confirm"
+                type="button"
+                disabled={appointmentDeletingId !== null}
+                onClick={() => void deleteAppointment()}
+              >
+                {appointmentDeletingId === appointmentDeleteTarget.id
+                  ? "Deleting…"
+                  : "Delete permanently"}
+              </button>
+            </div>
+          </section>
         </div>
       )}
       {detailsAppointment && (

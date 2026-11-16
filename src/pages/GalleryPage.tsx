@@ -148,9 +148,32 @@ export default function GalleryPage({ navigate }: Props) {
             ))}
           </div>
         ) : (
-          <p className="gallery-empty-state" role="status">
-            No videos yet.
-          </p>
+          <div className="gallery-empty-state gallery-empty-card" role="status">
+            <span className="gallery-empty-art" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none">
+                <rect x="9" y="16" width="34" height="32" rx="4" />
+                <path d="m43 27 12-7v24l-12-7" />
+                <path d="m23 25 10 7-10 7V25Z" />
+                <path d="m49 10 1.5 4.5L55 16l-4.5 1.5L49 22l-1.5-4.5L43 16l4.5-1.5L49 10Z" />
+              </svg>
+            </span>
+            <div className="gallery-empty-copy">
+              <span className="gallery-empty-kicker">MORE MOMENTS TO COME</span>
+              <h2>Our next studio story is on its way.</h2>
+              <p>
+                We’re getting our behind-the-scenes moments ready for you. Check
+                back soon, or come create a moment of your own.
+              </p>
+            </div>
+            <button
+              className="gallery-empty-action"
+              type="button"
+              onClick={() => navigate("/appointments")}
+            >
+              Book your visit
+              <span aria-hidden="true">↗</span>
+            </button>
+          </div>
         )}
       </section>
       <section className="gallery-content">
@@ -200,7 +223,7 @@ export default function GalleryPage({ navigate }: Props) {
           </div>
         ) : (
           <div
-            className={`gallery-empty-state ${galleryPhotos.length ? "filtered" : "no-photos"}`}
+            className={`gallery-empty-state gallery-empty-card ${galleryPhotos.length ? "filtered" : "no-photos"}`}
             role="status"
           >
             <span className="gallery-empty-art" aria-hidden="true">
